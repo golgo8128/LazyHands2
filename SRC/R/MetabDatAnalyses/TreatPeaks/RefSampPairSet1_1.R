@@ -78,7 +78,7 @@ RefSampPairSet$methods(plot_peak_in_ephe =
     peak_intsty_tops   <- peak_ref$get_intensity_top()
     
     for(i in 1:length(.self$smp_l)){
-      smp  <- .self$smp_l[[ i ]]
+      smp  <- .self$smp_l[[ i ]] # .self$refsmp_pairs_l[[ i ]]$smp 
       pair <- .self$refsmp_pairs_l[[ i ]]
       
       ephe_info_smp <-
@@ -129,17 +129,20 @@ RefSampPairSet$methods(plot_peak_in_ephe =
     for(i in 1:length(.self$smp_l)){
       smp  <- .self$smp_l[[ i ]]
       pair <- .self$refsmp_pairs_l[[ i ]]
+      ephe_info_smp <-
+        smp$get_ephe_info_from_metabid(imetabid)
+      ephe_smp <- ephe_info_smp$ephe
     
       par(new=T)
       
       ephe_smp$plot_res_find_peak_simple(
         col = cols_smp[ i ],
-        mts = pair$map_to_ref(ephe_smp$get_mt()),
+        mts = pair$map_to_ref(ephe_smp$get_mts()),
         xlim = xlim, ylim = ylim,
         xlab = "Reference migration time (MT)",
         ylab = "Intensity",
         main = title,
-        ann = T)
+        ann = F)
       
     }
       
@@ -169,15 +172,15 @@ if(exists("rsunit_test_RefSampPairSet") &&
   
   tmp_annotlist1 <- AnnotList(example_annotlist_file1)
   
-  pairset <- RefSampPairSet(tmp_ref1)
-  # pairset$add_smp(tmp_smm1)
-  pairset$add_smp(tmp_smm2)
-  pairset$gen_Reijenga()
+  tmppairset <- RefSampPairSet(tmp_ref1)
+  tmppairset$add_smp(tmp_smm1)
+  tmppairset$add_smp(tmp_smm3)
+  tmppairset$gen_Reijenga()
   
-  # print(pairset$map_to_ref(1:10))
-  # tmp_match_pk <- pairset$match_peak_simple("G011")
-  # print(pairset$annotate_landmarks())
-  pairset$plot_peak_in_ephe("107")
+  # print(tmppairset$map_to_ref(1:10))
+  # tmp_match_pk <- tmppairset$match_peak_simple("G011")
+  # print(tmppairset$annotate_landmarks())
+  tmppairset$plot_peak_in_ephe("107")
   
 }
 
