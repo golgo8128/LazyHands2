@@ -1,6 +1,8 @@
 
-source.RS("Usefuls1/find_peak_simple1_3.R")
 source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_2.R")
+
+source.RS("Usefuls1/find_peak_simple1_3.R")
+source.RS("DataStruct1/merge_lists1_1.R")
 
 # For unit test, rsunit_test_EPherogram <- T and source it.
 
@@ -257,9 +259,19 @@ EPherogram$methods(plot_res_find_peak_simple =
     }
     
     ity <- .self$get_intstis()
-                       
-    plot(mts, ity, col = col, type = "l", ...)
     
+    default_varargs <- 
+      list(x = mts, y = ity,
+           col = col, type = "l",
+           xlab = "Migration time (MT)",
+           ylab = "Intensity",
+           main = sprintf("Electropherogram of %f", .self$mz))
+    ivarargs_l      <- list(...)
+    
+    do.call(plot, merge_two_lists(default_varargs,
+                                  ivarargs_l))
+    # plot(mts, ity, col = col, type = "l", ...)
+          
     for(pkobj in .self$peak_list){
       
       # points(mts[ pkobj$p_start ],
