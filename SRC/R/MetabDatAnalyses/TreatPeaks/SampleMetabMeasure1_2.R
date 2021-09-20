@@ -122,6 +122,21 @@ SampleMetabMeasure$methods(find_IS_marks =
   })
 
 
+SampleMetabMeasure$methods(get_peaks =
+  function(imz_range = NULL, imt_range = NULL){
+  
+    pks_accu <- NULL
+    for(ephe in .self$ephe_list){
+      if(is.null(imz_range) ||
+         (imz_range[1] <= ephe$mz && ephe$mz < imz_range[2])){
+        pks_accu <- c(pks_accu, ephe$get_peaks(imt_range))  
+      }
+    }
+  
+    return(pks_accu)
+  
+})
+
 SampleMetabMeasure$methods(get_IS_marks =
   function(){
 
@@ -218,5 +233,11 @@ if(exists("rsunit_test_SampleMetabMeasure") &&
   
   tmpmhannotlist1 <- AnnotList(tmp_annotlist_file1)  
   tmpispks <- tmp_smm$find_IS_marks(tmpmhannotlist1)
+  
+  # pks_l <- tmp_smm$get_peaks()
+  # sapply(pks_l, function(tmppk){ tmppk$mt_top })
+  # sapply(pks_l, function(tmppk){ tmppk$epherogram_obj$mz })
+  # sapply(pks_l, function(tmppk){ tmppk$h$zscore })
+  
   
 }

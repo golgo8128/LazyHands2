@@ -17,7 +17,9 @@ PeakSingle <-
                 mt_top         = "numeric",
                 peak_annot_id  = "character",
                 h              = "list"
-                   # score, internal_std_flag, etc.
+                   # score, baseline intensity,
+                   #    surrounding baseline region,
+                   #    internal_std_flag, etc.
               ))
 
 PeakSingle$methods(initialize =
