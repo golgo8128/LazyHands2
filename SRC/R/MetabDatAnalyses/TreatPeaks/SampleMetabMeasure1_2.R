@@ -1,6 +1,7 @@
 
 source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_1.R")
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
+source.RS("Usefuls1/data_range1.R")
 
 # For unit test, rsunit_test_SampleMetabMeasure <- T and source it.
 
@@ -137,6 +138,40 @@ SampleMetabMeasure$methods(get_peaks =
   
 })
 
+SampleMetabMeasure$methods(plot_peaks =
+  function(imz_range = NULL, imt_range = NULL){
+
+    pks_l       <- .self$get_peaks()  
+    pk_top_mts  <- sapply(pks_l, function(tmppk){ tmppk$mt_top })
+    pk_mzs      <- sapply(pks_l, function(tmppk){ tmppk$epherogram_obj$mz })    
+    pk_scores   <- sapply(pks_l, function(tmppk){ tmppk$h$zscore })
+    pk_annotids <- sapply(pks_l, function(tmppk){ tmppk$peak_annot_id })
+    
+    annot_bools <- nchar(pk_annotids) > 0
+    
+    xlim <- extra_range(min(pk_top_mts), max(pk_top_mts))
+    ylim <- extra_range(min(pk_mzs)    , max(pk_mzs))
+    
+    # extra_range(val_min, val_max, ex_rate = 0.1
+    
+    plot(pk_top_mts, pk_mzs, 
+         xlab = "Migration time (MT)",
+         ylab = "m/z",
+         main = paste("Peaks in", .self$samplenam),
+         xlim = xlim, ylim = ylim)
+    
+    points(pk_top_mts[ annot_bools ],
+           pk_mzs[ annot_bools ],
+           col = "orange", pch = 16)
+    
+    text(pk_top_mts[ annot_bools ],
+         pk_mzs[ annot_bools ],
+         pk_annotids[ annot_bools ],
+         pos = 1,
+         col = "orange", pch = 16)
+
+})
+
 SampleMetabMeasure$methods(get_IS_marks =
   function(){
 
@@ -233,6 +268,8 @@ if(exists("rsunit_test_SampleMetabMeasure") &&
   
   tmpmhannotlist1 <- AnnotList(tmp_annotlist_file1)  
   tmpispks <- tmp_smm$find_IS_marks(tmpmhannotlist1)
+  
+  tmp_smm$plot_peaks()
   
   # pks_l <- tmp_smm$get_peaks()
   # sapply(pks_l, function(tmppk){ tmppk$mt_top })
