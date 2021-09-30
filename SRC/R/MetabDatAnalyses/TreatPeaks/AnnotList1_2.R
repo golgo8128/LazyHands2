@@ -176,12 +176,27 @@ AnnotList$methods(get_mt_range = function(imetab_id){
   
 })
 
+AnnotList$methods(get_mz_range_dfrm = function(){
+  
+  target_mz <- .self$annotlist_dfrm$`m/z`
+  target_mz_low  <-
+    target_mz * (1 - .self$annotlist_dfrm$ppm / 10^6)
+  target_mz_high <-
+    target_mz * (1 + .self$annotlist_dfrm$ppm / 10^6)
+  target_mz_range_mat <- cbind(target_mz_low, target_mz_high)
+  rownames(target_mz_range_mat) <- rownames(.self$annotlist_dfrm)
+    
+  return(target_mz_range_mat)
+  
+})
+
+
 # Unit test
 if(exists("rsunit_test_AnnotList") && rsunit_test_AnnotList){
 
   example_annotlist_file1 <-
     RSFPath("TRUNK", "cWorks", "Project",
-            "MetabolomeGeneral", "AnnotationList",
+            "MetabolomeGeneral", "CE-MS", "AnnotationList",
             "C_114_annotlist_160809-2_RSC1.csv")
   
   tmp_annotlist1 <- AnnotList(example_annotlist_file1)
