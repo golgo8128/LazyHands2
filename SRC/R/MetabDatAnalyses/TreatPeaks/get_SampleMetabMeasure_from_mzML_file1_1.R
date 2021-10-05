@@ -11,7 +11,7 @@ iannotlist_file <-
           "MetabolomeGeneral", "CE-MS", "AnnotationList",
           "C_114_annotlist_160809-2.csv")
 
-imzML_files <- c(RSFPath("DESKTOP", "C_114STD_1_partial.mzML"))
+imzML_files <- c(RSFPath("TMP", "C_114STD_1_partial.mzML"))
 
 annotlist <- AnnotList(iannotlist_file)
 target_mz_range_mat <- annotlist$get_mz_range_dfrm()
@@ -32,7 +32,10 @@ for(sample_idx in 1:ncol(chromats_extracted)){
   
   for(chromat_idx in 1:nrow(chromats_extracted)){
     chromat <- chromats_extracted[ chromat_idx, sample_idx ]
-    
+   
+    ephe <- EPherogram(cbind(rtime(chromat), intensity(chromat)))
+    ephe$set_mz(annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
+    smm$add_ephe(ephe) 
   }
   
   batch$add_sample(smm)
