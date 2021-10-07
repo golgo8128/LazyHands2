@@ -80,6 +80,7 @@ SampleMetabMeasure$methods(find_ephe_mz =
 
     diffs_mz <- .self$ephe_mzs - imz
     idx_min <- which.min(abs(diffs_mz))
+    
     if(abs(diffs_mz[ idx_min ]) <= max_diff_mz){
       return(.self$ephe_list[[ idx_min ]])
     } else {
@@ -160,16 +161,18 @@ SampleMetabMeasure$methods(plot_peaks =
          main = paste("Peaks in", .self$samplenam),
          xlim = xlim, ylim = ylim)
     
-    points(pk_top_mts[ annot_bools ],
+    if(sum(annot_bools)){
+      points(pk_top_mts[ annot_bools ],
+             pk_mzs[ annot_bools ],
+             col = "orange", pch = 16)
+      
+      text(pk_top_mts[ annot_bools ],
            pk_mzs[ annot_bools ],
+           pk_annotids[ annot_bools ],
+           pos = 1,
            col = "orange", pch = 16)
+    }
     
-    text(pk_top_mts[ annot_bools ],
-         pk_mzs[ annot_bools ],
-         pk_annotids[ annot_bools ],
-         pos = 1,
-         col = "orange", pch = 16)
-
 })
 
 SampleMetabMeasure$methods(get_IS_marks =
@@ -263,7 +266,7 @@ if(exists("rsunit_test_SampleMetabMeasure") &&
 
   tmp_annotlist_file1 <-
     RSFPath("TRUNK", "cWorks", "Project",
-            "MetabolomeGeneral", "AnnotationList",
+            "MetabolomeGeneral", "CE-MS", "AnnotationList",
             "C_114_annotlist_160809-2_RSC1.csv")
   
   tmpmhannotlist1 <- AnnotList(tmp_annotlist_file1)  

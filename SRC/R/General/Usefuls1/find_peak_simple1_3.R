@@ -9,6 +9,10 @@ find_peak_simple <- function(ivec,
                              imean = NULL, isd = NULL,
                              split_peak_ratio_thres = 0.5){
     
+  if(any(is.na(ivec)) || any(is.nan(ivec))){
+      stop("[ ERROR ] NA or NaN found in the vector intended for peak detection.")
+  }
+  
   if(is.null(imean) || is.null(isd)){
     imean = mean(ivec)
     isd   = sd(ivec)
@@ -282,6 +286,9 @@ divide_peak <-
         peak_right_limit)
     
 
+    # split_poss will be peak dividing positions
+    # ex. c(10, 15, 18, 20)
+    # Then, 10 - 15, 15:18, 18:20 will be returned.
     return(cbind(head(split_poss, -1),
                  tail(split_poss, -1)))
     

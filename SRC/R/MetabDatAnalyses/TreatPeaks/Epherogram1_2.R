@@ -30,8 +30,12 @@ EPherogram$methods(show =
   function(){
     
     cat(sprintf("##### Electropherogram - m/z: %f #####\n", .self$mz))
-    cat(sprintf("MT range: %f - %f\n",
-                .self$epherogram[1, 1], .self$epherogram[nrow(.self$epherogram), 1]))
+    if(nrow(.self$epherogram)){
+      cat(sprintf("MT range: %f - %f\n",
+                  .self$epherogram[1, 1], .self$epherogram[nrow(.self$epherogram), 1]))
+    } else {
+      cat("MT range:\n")
+    }
     cat(sprintf("Peaks:\n"))
     print(.self$peak_list)
     cat("\n")
@@ -70,7 +74,7 @@ EPherogram$methods(get_mt_range =
 
 EPherogram$methods(find_bulk_peaks = 
   function(ictrl_range_mt = c(2,5)*60,
-           ipeak_width_range = c(1, 120), # Can be Inf
+           ipeak_width_range = c(1, 300), # Can be Inf, # This can be ratio of peak top height and width
            izscore_peak_thres = 3,
            izscore_signal_thres = 1.645,
            split_peak_ratio_thres = 0.5){
@@ -259,6 +263,8 @@ EPherogram$methods(plot_res_find_peak_simple =
     }
     
     ity <- .self$get_intstis()
+    
+    if(length(mts) == 0){ return(NA) }
     
     default_varargs <- 
       list(x = mts, y = ity,
