@@ -1,6 +1,6 @@
 
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotListPair1_1.R")
-source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_2.R")
+source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
 
 source.RS("Usefuls1/data_range1.R")
 
@@ -75,7 +75,7 @@ RefSampPairSingle$methods(match_peak_simple =
     ref_mt_range <-
       .self$ref$annotlist$get_mt_range(imetabid)
     tgt_mt_range <-
-      .self$map_to_ref(ref_mt_range)
+      .self$map_from_ref(ref_mt_range)
     mz <- .self$ref$annotlist$get_mz(imetabid)
     
     ephe <- .self$smp$find_ephe_mz(mz)
@@ -98,9 +98,9 @@ RefSampPairSingle$methods(annotate_landmarks =
     
     for(metabid in .self$ref$annotlist$marks$landmarks){
 
-      pk <- .self$match_peak_simple(metabid)
-      if(!is.null(pk)){
-        .self$smp$annotate_peak_metabid(tmp_match_pk, metabid)
+      matched_pk <- .self$match_peak_simple(metabid)
+      if(!is.null(matched_pk)){
+        .self$smp$annotate_peak_metabid(matched_pk, metabid)
         annotated_metabids <- c(annotated_metabids, metabid)
         .self$smp$annotlist$marks$landmarks <-
             c(.self$smp$annotlist$marks$landmarks, metabid)

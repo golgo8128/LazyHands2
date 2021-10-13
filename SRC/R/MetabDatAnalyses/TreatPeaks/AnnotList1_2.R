@@ -94,7 +94,7 @@ AnnotList <-
 AnnotList$methods(set_samplemetabmeasure
   = function(isamplemetabmeasure){
                     
-    source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_2.R")
+    source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
                     
     if(is(isamplemetabmeasure, "SampleMetabMeasure")){
       .self$sampmetabmeasr <- isamplemetabmeasure
@@ -176,13 +176,13 @@ AnnotList$methods(get_mt_range = function(imetab_id){
   
 })
 
-AnnotList$methods(get_mz_range_dfrm = function(){
+AnnotList$methods(get_mz_range_dfrm = function(imfactor = 1){
   
   target_mz <- .self$annotlist_dfrm$`m/z`
   target_mz_low  <-
-    target_mz * (1 - .self$annotlist_dfrm$ppm / 10^6)
+    target_mz * (1 - .self$annotlist_dfrm$ppm / 10^6 * imfactor)
   target_mz_high <-
-    target_mz * (1 + .self$annotlist_dfrm$ppm / 10^6)
+    target_mz * (1 + .self$annotlist_dfrm$ppm / 10^6 * imfactor)
   target_mz_range_mat <- cbind(target_mz_low, target_mz_high)
   rownames(target_mz_range_mat) <- rownames(.self$annotlist_dfrm)
     

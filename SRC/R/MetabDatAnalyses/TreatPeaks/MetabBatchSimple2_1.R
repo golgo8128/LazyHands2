@@ -2,12 +2,15 @@
 # For unit test, rsunit_test_MetabBatchSimple <- T and source it.
 
 source.RS("MetabDatAnalyses/TreatPeaks/PeakGrps1_1.R")
+source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
 
 MetabBatchSimple <-
   setRefClass("MetabBatchSimple",
     fields = list(
         sample_metab_meas_list = "list",
-        peak_grps              = "PeakGrps"
+        peak_grps              = "PeakGrps",
+        ref_annotlist          = "AnnotList",
+        xcms_MSnbase           = "ANY"
         
       )) # "ANY" as generic class name?
 
@@ -16,6 +19,64 @@ MetabBatchSimple$methods(initialize =
     function(){
       
     })
+
+MetabBatchSimple$methods(import_from_mzml_files =
+    function(imzML_files, iannotlist_file){
+
+      annotlist           <- AnnotList(iannotlist_file)
+      .self$ref_annotlist <- annotlist
+      target_mz_range_mat <- annotlist$get_mz_range_dfrm()
+      
+      xcms_rawdat_obj <-
+        readMSData(imzML_files, mode = "onDisk")
+      chromats_extracted <-
+        chromatogram(xcms_rawdat_obj, mz = target_mz_range_mat)
+      
+      if(nrow(target_mz_range_mat) != nrow(chromats_extracted)){
+        stop("[ ERROR ] Missing electropherograms from xcms")
+        # Will this ever happen?
+      }
+      
+      .self$xcms_MSnbase <- xcms_rawdat_obj
+      
+      for(sample_idx in 1:ncol(chromats_extracted)){
+        
+        smm <-
+          SampleMetabMeasure(
+            idatfilnam = fileNames(xcms_rawdat_obj)[ sample_idx ],
+            isamplenam = basename(fileNames(xcms_rawdat_obj)[ sample_idx ]))
+        
+        for(chromat_idx in 1:nrow(chromats_extracted)){
+          chromat <- chromats_extracted[ chromat_idx, sample_idx ]
+          
+          migtimes <- rtime(chromat)
+          intsties <- intensity(chromat)
+          ephe_mat <- cbind(migtimes, intsties)
+          
+          # if(any(is.na(migtimes))){
+          #   stop("NA in MTs")
+          # }
+          
+          # if(any(is.na(intsties))){
+          #   stop("NA in intensities")
+          # }
+          
+          ephe_mat <- ephe_mat[ !is.na(intsties), ]
+          
+          ephe <- EPherogram(ephe_mat)
+          ephe$set_mz(annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
+          smm$add_ephe(ephe) 
+          
+          print(annotlist$annotlist_dfrm[ chromat_idx, ])
+          
+        }
+        
+        .self$add_sample(smm)
+        
+      }
+      
+    })
+
 
 MetabBatchSimple$methods(add_sample =
     function(isample_metab_meas){
@@ -39,7 +100,7 @@ MetabBatchSimple$methods(find_bulk_peaks_all_samples =
 if(exists("rsunit_test_MetabBatchSimple") &&
    rsunit_test_MetabBatchSimple){
 
-  source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_1.R")
+  source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
   
   tmp_batch <- MetabBatchSimple()
   
