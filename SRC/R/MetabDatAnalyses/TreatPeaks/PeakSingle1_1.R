@@ -45,6 +45,14 @@ PeakSingle$methods(initialize =
     
 })
 
+
+PeakSingle$methods(set_annot_id =
+  function(iannot_id){
+    
+    .self$peak_annot_id <- iannot_id
+    
+  })
+
 PeakSingle$methods(get_intensity_top =
   function(){
                        

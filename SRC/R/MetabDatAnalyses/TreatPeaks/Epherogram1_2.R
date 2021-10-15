@@ -72,6 +72,15 @@ EPherogram$methods(get_mt_range =
     
   })
 
+EPherogram$methods(add_peak =
+  function(ipeak_single){
+                       
+    .self$peak_list <-
+      c(.self$peak_list, ipeak_single)
+                       
+  })
+
+
 EPherogram$methods(find_bulk_peaks = 
   function(ictrl_range_mt = c(2,5)*60,
            ipeak_width_range = c(1, 300), # Can be Inf, # This can be ratio of peak top height and width
@@ -115,8 +124,7 @@ EPherogram$methods(find_bulk_peaks =
         if(ipeak_width_range[1] <= mt_diff && mt_diff < ipeak_width_range[2]){
           pk_single <- PeakSingle(.self, pk_pos$start_pos, pk_pos$end_pos)
           pk_single$h$zscore  <- pk_pos$top_zscore
-          .self$peak_list <-
-            c(.self$peak_list, pk_single)
+          .self$add_peak(pk_single)
         }
       }
     }
@@ -262,13 +270,15 @@ EPherogram$methods(plot_res_find_peak_simple =
       mts <- .self$get_mts()
     }
     
-    ity <- .self$get_intstis()
+    ity  <- .self$get_intstis()
+    ylim <- c(0, max(ity)*1.1)
     
     if(length(mts) == 0){ return(NA) }
     
     default_varargs <- 
       list(x = mts, y = ity,
-           col = col, type = "l",
+           col  = col, type = "l",
+           ylim = ylim,
            xlab = "Migration time (MT)",
            ylab = "Intensity",
            main = sprintf("Electropherogram of %f", .self$mz))
