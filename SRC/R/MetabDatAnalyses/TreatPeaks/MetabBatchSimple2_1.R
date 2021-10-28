@@ -10,7 +10,8 @@ MetabBatchSimple <-
         sample_metab_meas_list = "list",
         peak_grps              = "PeakGrps",
         ref_annotlist          = "AnnotList",
-        xcms_MSnbase           = "ANY"
+        xcms_MSnbase           = "ANY",
+        xcms_XCMSnExp          = "ANY"
         
       )) # "ANY" as generic class name?
 
@@ -21,11 +22,11 @@ MetabBatchSimple$methods(initialize =
     })
 
 MetabBatchSimple$methods(import_from_mzml_files =
-    function(imzML_files, iannotlist_file){
+    function(imzML_files, iannotlist){
 
-      annotlist           <- AnnotList(iannotlist_file)
-      .self$ref_annotlist <- annotlist
-      target_mz_range_mat <- annotlist$get_mz_range_dfrm()
+      # iannotlist           <- AnnotList(iannotlist_file)
+      .self$ref_annotlist <- iannotlist
+      target_mz_range_mat <- iannotlist$get_mz_range_dfrm()
       
       xcms_rawdat_obj <-
         readMSData(imzML_files, mode = "onDisk")
@@ -64,10 +65,10 @@ MetabBatchSimple$methods(import_from_mzml_files =
           ephe_mat <- ephe_mat[ !is.na(intsties), ]
           
           ephe <- EPherogram(ephe_mat)
-          ephe$set_mz(annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
+          ephe$set_mz(iannotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
           smm$add_ephe(ephe) 
           
-          print(annotlist$annotlist_dfrm[ chromat_idx, ])
+          print(iannotlist$annotlist_dfrm[ chromat_idx, ])
           
         }
         
@@ -84,6 +85,63 @@ MetabBatchSimple$methods(add_sample =
       .self$sample_metab_meas_list <-
         c(.self$sample_metab_meas_list, isample_metab_meas)
     })
+
+
+MetabBatchSimple$methods(set_xcms_peakgrp_info =
+  function(){
+
+    xcms_chromPeaks_all_mat <- NULL
+    metabids_all <- NULL
+    for(i in 1:length(.self$sample_metab_meas_list)){
+      
+      csmm <- .self$sample_metab_meas_list[[ i ]]
+      xcms_chromPeak_single <-
+        csmm$xcms_chromPeaks(i)
+      
+      xcms_chromPeaks_all_mat <-
+        rbind(xcms_chromPeaks_all_mat,
+              xcms_chromPeak_single$mat)
+      metabids_all <- c(metabids_all,
+                        xcms_chromPeak_single$metabids)
+      # print(xcms_chromPeak_single$metabids)
+      
+    }
+    
+    metabid_to_peaks <-
+      split(1:nrow(xcms_chromPeaks_all_mat),
+            metabids_all)
+    
+    peakgrps <- list()
+    for(metabid in names(metabid_to_peaks)){
+      if(nchar(metabid) && length(metabid_to_peaks[[ metabid ]]) >= 2){
+        peakgrps <-
+          c(peakgrps, list(metabid_to_peaks[[ metabid ]]))
+      }
+    }
+    
+    peakgrp_mat <- matrix(nrow = length(peakgrps), ncol = 10)
+    colnames(peakgrp_mat) <-
+      c("mzmed", "mzmin", "mzmax", "rtmed",
+        "rtmin", "rtmax",
+        "npeaks", "X1", "peakidx", "ms_level")
+    peakgrp_mat[, "ms_level" ] <- 1
+    peakgrp_fd <- as.data.frame(peakgrp_mat)
+    peakgrp_fd$peakidx <- peakgrps
+    # peakgrp_fd$ms_level <- 1
+    
+    
+    xcms_data_with_peaks <- as(.self$xcms_MSnbase, "XCMSnExp")
+    # findChromPeaks(.self$h$raw_data,
+    #                CentWaveParam(peakwidth = c(20, 80), snthresh = 10))
+    # This was necessary to get "XCMSnExp" class
+    chromPeaks(xcms_data_with_peaks) <- xcms_chromPeaks_all_mat
+    featureDefinitions(xcms_data_with_peaks) <- DataFrame(peakgrp_fd)    
+    
+    .self$xcms_XCMSnExp <- xcms_data_with_peaks
+    return(xcms_data_with_peaks)
+    
+  })
+    
 
 MetabBatchSimple$methods(find_bulk_peaks_all_samples =
   function(...){

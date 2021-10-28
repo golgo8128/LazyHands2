@@ -265,6 +265,8 @@ SampleMetabMeasure$methods(xcms_chromPeaks =
                         function(tmppk){ tmppk$mt_start })    
     mt_rights <- sapply(.self$get_peaks(),
                        function(tmppk){ tmppk$mt_end })   
+    metabids  <- sapply(.self$get_peaks(),
+                        function(tmppk){ tmppk$peak_annot_id }) 
     
     mat <- cbind(mzs, mzs, mzs, mt_tops, mt_lefts, mt_rights,
                  matrix(NA, length(.self$get_peaks()), 3),
@@ -273,7 +275,7 @@ SampleMetabMeasure$methods(xcms_chromPeaks =
       c("mz", "mzmin", "mzmax", "rt", "rtmin", "rtmax",
         "into", "maxo", "sn", "sample")
     
-    return(mat)
+    return(list(metabids = metabids, mat = mat))
     
   })
 
@@ -334,6 +336,66 @@ SampleMetabMeasure$methods(import_mzML_peak_range_info =
   })
 
     
+SampleMetabMeasure$methods(import_peak_range_info =
+  function(ipeak_range_info_file){
+    # Under construction
+    
+    source.RS("MetabDatAnalyses/TreatPeaks/PeakSingle1_1.R")
+    
+    peak_range_info_dfrm <-
+      read.table(ipeak_range_info_file, sep = "\t",
+                 header = T, row.names = 1,
+                 quote = "", check.names = F, comment.char = "")
+    
+    # mzML_obj <-
+    #   readMSData(imzML_file, mode = "onDisk")
+    
+    mz_ranges <-
+      cbind(peak_range_info_dfrm[[ "Peak m/z" ]] * (1-0.1^6),
+            peak_range_info_dfrm[[ "Peak m/z" ]] * (1+0.1^6))
+    
+    # chromats <-
+    #   chromatogram(mzML_obj, mz = mz_ranges)
+    
+    # One peak for one electropherogram
+    # Measured m/z of Ile and Leu slightly differ.
+    # Corresponding m/z's in the actual sample may be identical.
+    for(i in 1:nrow(peak_range_info_dfrm)){
+      
+      metabid  <- rownames(peak_range_info_dfrm)[ i ]
+      annot    <- peak_range_info_dfrm[ i, "Peak annotation" ]
+      # print(annot)
+      cmz      <- peak_range_info_dfrm[ metabid, "theoretical m/z" ] # Maybe better than Peak m/z
+
+      # chromat  <- chromats[ i, 1 ]
+      # chromat <- chromatogram(mzML_obj,
+      #                         mz = c(cmz * (1-0.1^6), cmz * (1+0.1^6)))
+      # ephe_mat <- cbind(rtime(chromat), intensity(chromat))
+      # ephe     <- EPherogram(ephe_mat)
+      # ephe$set_mz(cmz)
+      ephe <- .self$find_ephe_mz(cmz)
+      
+      
+      mt_start <- peak_range_info_dfrm[ i, "Peak MT start" ] * 60
+      mt_end   <- peak_range_info_dfrm[ i, "Peak MT end" ]   * 60
+      
+      start_idx <- which.min(abs(ephe$get_mts() - mt_start))
+      end_idx   <- which.min(abs(ephe$get_mts() - mt_end))
+      
+      pk <- PeakSingle(ephe, start_idx, end_idx)
+      ephe$add_peak(pk)
+      .self$add_ephe(ephe)
+      .self$annotate_peak_metabid(pk, metabid)
+      # pk$set_annot_id(metabid)
+      
+    }
+    
+    # .self$update_annotlist_based_on_peaks()    
+    
+  })
+
+
+
 if(exists("rsunit_test_SampleMetabMeasure") &&
    rsunit_test_SampleMetabMeasure){
 
