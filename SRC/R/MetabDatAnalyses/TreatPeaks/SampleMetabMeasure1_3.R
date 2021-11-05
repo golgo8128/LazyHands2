@@ -1,5 +1,5 @@
 
-source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_1.R")
+source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
 source.RS("Usefuls1/data_range1.R")
 
@@ -17,6 +17,14 @@ SampleMetabMeasure <-
                                # (ex. Uncharacterized peaks not in the reference)
       h         = "list"
     ))
+
+SampleMetabMeasure$methods(show =
+    function(){
+
+      cat(sprintf("Sample measurement %s\n",
+                  .self$samplenam))
+      
+    })
 
 SampleMetabMeasure$methods(initialize =
   function(idatfilnam = "", isamplenam = ""){

@@ -1,32 +1,57 @@
 
 # For unit test, rsunit_test_MetabBatchSimple <- T and source it.
 
-source.RS("MetabDatAnalyses/TreatPeaks/PeakGrps1_1.R")
+# source.RS("MetabDatAnalyses/TreatPeaks/PeakGrps1_1.R")
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
+source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_2.R")
 
 MetabBatchSimple <-
   setRefClass("MetabBatchSimple",
     fields = list(
         sample_metab_meas_list = "list",
-        peak_grps              = "PeakGrps",
+        ref                    = "ANY", # Intended for SampleMetabMeasure
+        # peak_grps              = "PeakGrps",
         ref_annotlist          = "AnnotList",
         xcms_MSnbase           = "ANY",
-        xcms_XCMSnExp          = "ANY"
-        
+        xcms_XCMSnExp          = "ANY",
+        xcms_XCMSnExp_aligned  = "ANY"
       )) # "ANY" as generic class name?
 
 
 MetabBatchSimple$methods(initialize =
-    function(){
-      
+    function(iannotlist = NULL){
+
+      if(!is.null(iannotlist)){
+        .self$ref_annotlist <- iannotlist
+      }
+            
     })
 
-MetabBatchSimple$methods(import_from_mzml_files =
-    function(imzML_files, iannotlist){
 
-      # iannotlist           <- AnnotList(iannotlist_file)
-      .self$ref_annotlist <- iannotlist
-      target_mz_range_mat <- iannotlist$get_mz_range_dfrm()
+MetabBatchSimple$methods(set_to_ref =
+      function(iref){
+
+        .self$ref <- iref
+        
+        hits <-
+          sapply(.self$sample_metab_meas_list,
+                 function(tmpsmm){ identical(iref, tmpsmm) })
+        if(any(hits)){
+          .self$sample_metab_meas_list[[ which(hits) ]] <- NULL
+        }
+        
+        # if(nrow(.self$ref_annotlist$annotlist_dfrm) == 0){
+        #  .self$ref_annotlist <- iref$annotlist
+        # } else if(nrow(iref$annotlist$annotlist_dfrm) == 0){
+        iref$annotlist <- .self$ref_annotlist
+        # }
+    })
+
+
+MetabBatchSimple$methods(import_from_mzml_files =
+    function(imzML_files){
+
+      target_mz_range_mat <- .self$ref_annotlist$get_mz_range_dfrm()
       
       xcms_rawdat_obj <-
         readMSData(imzML_files, mode = "onDisk")
@@ -65,15 +90,38 @@ MetabBatchSimple$methods(import_from_mzml_files =
           ephe_mat <- ephe_mat[ !is.na(intsties), ]
           
           ephe <- EPherogram(ephe_mat)
-          ephe$set_mz(iannotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
+          ephe$set_mz(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
           smm$add_ephe(ephe) 
           
-          print(iannotlist$annotlist_dfrm[ chromat_idx, ])
+          print(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, ])
           
         }
         
         .self$add_sample(smm)
         
+      }
+      
+    })
+
+
+
+MetabBatchSimple$methods(
+  find_bulk_peaks_all_ephe =
+    function(){
+    
+      for(csmm in .self$sample_metab_meas_list){
+        csmm$find_bulk_peaks_all_ephe()
+      }
+        
+    })
+
+
+MetabBatchSimple$methods(
+  find_IS_marks =
+    function(){
+      
+      for(csmm in .self$sample_metab_meas_list){
+        csmm$find_IS_marks(.self$ref_annotlist)
       }
       
     })
@@ -87,14 +135,30 @@ MetabBatchSimple$methods(add_sample =
     })
 
 
+MetabBatchSimple$methods(gen_refsamppairset =
+  function(){
+    
+    pairset <- RefSampPairSet(.self)
+    pairset$add_ref(.self$ref)
+    
+    for(csmm in .self$sample_metab_meas_list){
+      pairset$add_smp(csmm)
+    }
+
+    return(pairset)
+    
+  })
+
+
 MetabBatchSimple$methods(set_xcms_peakgrp_info =
   function(){
 
     xcms_chromPeaks_all_mat <- NULL
     metabids_all <- NULL
-    for(i in 1:length(.self$sample_metab_meas_list)){
+    smmsall <- c(list(.self$ref), .self$sample_metab_meas_list)
+    for(i in 1:length(smmsall)){
       
-      csmm <- .self$sample_metab_meas_list[[ i ]]
+      csmm <- smmsall[[ i ]]
       xcms_chromPeak_single <-
         csmm$xcms_chromPeaks(i)
       
@@ -143,6 +207,15 @@ MetabBatchSimple$methods(set_xcms_peakgrp_info =
   })
     
 
+MetabBatchSimple$methods(align_xcms =
+  function(ipkgrpp){
+    
+    .self$xcms_XCMSnExp_aligned <-
+      adjustRtime(.self$xcms_XCMSnExp, ipkgrpp)
+    
+  })
+
+
 MetabBatchSimple$methods(find_bulk_peaks_all_samples =
   function(...){
 
@@ -158,8 +231,9 @@ MetabBatchSimple$methods(find_bulk_peaks_all_samples =
 if(exists("rsunit_test_MetabBatchSimple") &&
    rsunit_test_MetabBatchSimple){
 
+  source.RS("MetabDatAnalyses/TreatPeaks/Epherogram1_2.R")
   source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
-  
+
   tmp_batch <- MetabBatchSimple()
   
   tmp_intsty1 <-
@@ -174,7 +248,7 @@ if(exists("rsunit_test_MetabBatchSimple") &&
   
   tmp_mt1 <- 1:length(tmp_intsty1) / 2
   tmp_ephe_mat1 <- cbind(tmp_mt1, tmp_intsty1)
-  tmp_ephe1 <- EPherogram(tmp_ephe_mat1)
+  tmp_ephe1 <- EPherogram(tmp_ephe_mat1, 70.63)
   
   tmp_intsty2 <-
     c(rep(c(0,1,2,1,2,1,0,1,1,1), 70),
@@ -189,17 +263,17 @@ if(exists("rsunit_test_MetabBatchSimple") &&
   
   tmp_mt2 <- 1:length(tmp_intsty2) / 2
   tmp_ephe_mat2 <- cbind(tmp_mt2, tmp_intsty2)
-  tmp_ephe2 <- EPherogram(tmp_ephe_mat2)
+  tmp_ephe2 <- EPherogram(tmp_ephe_mat2, 76.87)
   
   tmp_smm1 <- SampleMetabMeasure("Hypothetical sample file 1")
-  tmp_smm1$add_ephe(tmp_ephe1, 70.63)
-  tmp_smm1$add_ephe(tmp_ephe2, 75.87)
+  tmp_smm1$add_ephe(tmp_ephe1)
+  tmp_smm1$add_ephe(tmp_ephe2)
   tmp_batch$add_sample(tmp_smm1)
 
   tmp_smm2 <- SampleMetabMeasure("Hypothetical sample file 2")
-  tmp_smm2$add_ephe(tmp_ephe1, 71.63)
+  tmp_smm2$add_ephe(tmp_ephe1)
   # ??? Adding the electropherogram that appears in sample 1 as well
-  tmp_smm2$add_ephe(tmp_ephe2, 76.87)
+  tmp_smm2$add_ephe(tmp_ephe2)
   tmp_batch$add_sample(tmp_smm2)
 
   

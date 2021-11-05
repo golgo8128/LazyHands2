@@ -2,8 +2,10 @@
 library(RColorBrewer)
 
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotListPair1_1.R")
+source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
 source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSingle1_1.R")
+
 
 source.RS("Usefuls1/data_range1.R")
 
@@ -12,17 +14,29 @@ source.RS("Usefuls1/data_range1.R")
 RefSampPairSet <-
   setRefClass("RefSampPairSet",
               fields = list(
+                batch          = "MetabBatchSimple",
                 ref            = "SampleMetabMeasure",
                 smp_l          = "list",
-                refsmp_pairs_l = "list"
+                refsmp_pairs_l = "list" # ,
+                # adjust_mt_pairs_l = "list"
               ))
 
 RefSampPairSet$methods(initialize =
-  function(iref){
+  function(ibatch = NULL){
+
+    if(!is.null(ibatch)){
+      .self$batch <- ibatch
+    }
+        
+  })
+
+RefSampPairSet$methods(
+  add_ref = function(iref){
     
     .self$ref <- iref
     
   })
+
 
 RefSampPairSet$methods(
   add_smp = function(ismp){
@@ -48,6 +62,37 @@ RefSampPairSet$methods(
     }
       
   })
+
+RefSampPairSet$methods(
+  smm_unalign_to_ref_unalign_mt = function(isample, imt){
+    
+    sample_num_in_pairs <-
+      which(sapply(.self$refsmp_pairs_l,
+                   function(tmppair){ identical(tmppair$smp, isample) }))
+    ref_smm_pair <-
+      .self$refsmp_pairs_l[[ sample_num_in_pairs ]]
+    
+    ref_mt <- ref_smm_pair$smm_unalign_to_ref_unalign_mt(imt)
+    
+    return(ref_mt)
+    
+  })
+
+RefSampPairSet$methods(
+  ref_unalign_to_smm_unalign_mt = function(isample, imt){
+    
+    sample_num_in_pairs <-
+      which(sapply(.self$refsmp_pairs_l,
+                   function(tmppair){ identical(tmppair$smp, isample) }))
+    ref_smm_pair <-
+      .self$refsmp_pairs_l[[ sample_num_in_pairs ]]
+    
+    smm_mt <- ref_smm_pair$ref_unalign_to_smm_unalign_mt(imt)
+    
+    return(smm_mt)
+    
+  })
+
 
 
 RefSampPairSet$methods(plot_peak_in_ephe =
@@ -159,6 +204,38 @@ RefSampPairSet$methods(plot_peak_in_ephe =
   })
 
 
+RefSampPairSet$methods(calc_adjust_mt_pairs =
+  function(){
+
+  adjust_mt_pairs_squashed <-
+    cbind(rtime(.self$batch$xcms_XCMSnExp), rtime(.self$batch$xcms_XCMSnExp_aligned))
+  
+  adjust_mt_pairs_ref <- 
+    adjust_mt_pairs_squashed[
+      fromFile(.self$batch$xcms_XCMSnExp_aligned) == 1, ]
+    
+  for(ismm_num in 1:length(.self$refsmp_pairs_l)){
+    adjust_mt_pairs_smm <-
+      adjust_mt_pairs_squashed[
+        fromFile(.self$batch$xcms_XCMSnExp_aligned) == ismm_num  + 1, ]
+    
+    .self$refsmp_pairs_l[[ ismm_num ]]$adjust_mt_pair_ref <-
+      adjust_mt_pairs_ref
+    .self$refsmp_pairs_l[[ ismm_num ]]$adjust_mt_pair_smm <-
+      adjust_mt_pairs_smm
+    
+  }
+      
+  # .self$adjust_mt_pairs_l <-
+  #   lapply(1:length(fileNames(.self$batch$xcms_MSnbase)),
+  #          function(tmpsamplenum){
+  #            adjust_mt_pairs_squashed[
+  #              fromFile(.self$batch$xcms_XCMSnExp_aligned) == tmpsamplenum, ]
+  #          })
+  
+  })
+  
+
 if(exists("rsunit_test_RefSampPairSet") &&
    rsunit_test_RefSampPairSet){
   
@@ -166,13 +243,14 @@ if(exists("rsunit_test_RefSampPairSet") &&
   source.RS("MetabDatAnalyses/TreatPeaks/testdata1_2.R", reload = T)
   
   example_annotlist_file1 <-
-    RSFPath("TRUNK", "cWorks", "Project",
-            "MetabolomeGeneral", "AnnotationList",
-            "C_114_annotlist_160809-2_RSC1.csv")
+    RSFPath("TRUNK", "cWorks", "Project", "MetabolomeGeneral",
+            "CE-MS", "STDs", "Cation",
+            "RefSTD_C114_annotlist20200303.csv")
   
   tmp_annotlist1 <- AnnotList(example_annotlist_file1)
   
-  tmppairset <- RefSampPairSet(tmp_ref1)
+  tmppairset <- RefSampPairSet()
+  tmppairset$add_ref(tmp_ref1)
   tmppairset$add_smp(tmp_smm1)
   tmppairset$add_smp(tmp_smm3)
   tmppairset$gen_Reijenga()

@@ -12,6 +12,9 @@ RefSampPairSingle <-
                 ref = "SampleMetabMeasure",
                 smp = "SampleMetabMeasure",
                 params = "list",
+                adjust_mt_pair_ref = "matrix",
+                adjust_mt_pair_smm = "matrix",
+                # ref to its aligned, smp to its aligned
                 h = "list" # score, etc.
               ))
 
@@ -68,6 +71,43 @@ RefSampPairSingle$methods(map_from_ref =
     return(.self$params$annotlistpair$map_from_ref_Reijenga(imt_vec))
                              
   })
+
+
+RefSampPairSingle$methods(smm_unalign_to_ref_unalign_mt =
+  function(isample_mt){
+                              
+    nearest_idx <-
+      which.min(abs(.self$adjust_mt_pair_smm[ ,1 ] - isample_mt))
+    aligned_mt <-
+      .self$adjust_mt_pair_smm[ nearest_idx, 2 ]
+    ref_aligned_nearest_idx <-
+      which.min(abs(.self$adjust_mt_pair_ref[ , 2 ] - aligned_mt))
+    ref_mt <-
+      .self$adjust_mt_pair_ref[ ref_aligned_nearest_idx, 1 ]
+    
+    return(ref_mt)
+                              
+  })
+
+
+RefSampPairSingle$methods(ref_unalign_to_smm_unalign_mt =
+  function(iref_mt){
+  
+    nearest_idx <-
+      which.min(abs(.self$adjust_mt_pair_ref[ ,1 ] - iref_mt))
+    aligned_mt <-
+      .self$adjust_mt_pair_ref[ nearest_idx, 2 ]
+    smm_aligned_nearest_idx <-
+      which.min(abs(.self$adjust_mt_pair_smm[ , 2 ] - aligned_mt))
+    smm_mt <-
+      .self$adjust_mt_pair_smm[ smm_aligned_nearest_idx, 1 ]
+    
+    return(smm_mt)
+                              
+  })
+
+
+
 
 RefSampPairSingle$methods(match_peak_simple =
   function(imetabid){
