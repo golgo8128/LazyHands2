@@ -1,9 +1,10 @@
 
 # For unit test, rsunit_test_MetabBatchSimple <- T and source it.
 
+source.RS("FilePath/path_str_proc1.R")
 # source.RS("MetabDatAnalyses/TreatPeaks/PeakGrps1_1.R")
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
-source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_2.R")
+
 
 MetabBatchSimple <-
   setRefClass("MetabBatchSimple",
@@ -12,8 +13,9 @@ MetabBatchSimple <-
         ref                    = "ANY", # Intended for SampleMetabMeasure
         # peak_grps              = "PeakGrps",
         ref_annotlist          = "AnnotList",
-        xcms_MSnbase           = "ANY",
-        xcms_XCMSnExp          = "ANY",
+        refsamppairset         = "ANY", # Intended as RefSamplePairSet
+        xcms_MSnbase           = "ANY", # Be careful about the sample order;
+        xcms_XCMSnExp          = "ANY", # Reference will be the first sample.
         xcms_XCMSnExp_aligned  = "ANY"
       )) # "ANY" as generic class name?
 
@@ -45,6 +47,9 @@ MetabBatchSimple$methods(set_to_ref =
         # } else if(nrow(iref$annotlist$annotlist_dfrm) == 0){
         iref$annotlist <- .self$ref_annotlist
         # }
+        
+        .self$gen_refsamppairset()
+        
     })
 
 
@@ -70,7 +75,7 @@ MetabBatchSimple$methods(import_from_mzml_files =
         smm <-
           SampleMetabMeasure(
             idatfilnam = fileNames(xcms_rawdat_obj)[ sample_idx ],
-            isamplenam = basename(fileNames(xcms_rawdat_obj)[ sample_idx ]))
+            isamplenam = filename_wo_ext(basename(fileNames(xcms_rawdat_obj))[ sample_idx ]))
         
         for(chromat_idx in 1:nrow(chromats_extracted)){
           chromat <- chromats_extracted[ chromat_idx, sample_idx ]
@@ -135,8 +140,28 @@ MetabBatchSimple$methods(add_sample =
     })
 
 
+MetabBatchSimple$methods(gather_annot_mt =
+  function(){
+
+    odfrm <- .self$ref$annotlist$annotlist_dfrm[, "MT", drop=F]
+    colnames(odfrm) <- .self$ref$samplenam
+    for(csmm in .self$sample_metab_meas_list){
+      cdfrm <- csmm$annotlist$annotlist_dfrm[, "MT", drop=F]
+      colnames(cdfrm) <- csmm$samplenam
+      odfrm <- merge(odfrm, cdfrm, by = "row.names", all = T)
+      rownames(odfrm) <- odfrm[, "Row.names"]
+      odfrm <- odfrm[, colnames(odfrm) != "Row.names"]  
+    }
+    
+    return(odfrm)
+    
+  })
+
+
 MetabBatchSimple$methods(gen_refsamppairset =
   function(){
+    
+    source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_2.R")
     
     pairset <- RefSampPairSet(.self)
     pairset$add_ref(.self$ref)
@@ -145,7 +170,26 @@ MetabBatchSimple$methods(gen_refsamppairset =
       pairset$add_smp(csmm)
     }
 
+    .self$refsamppairset <- pairset
+    
     return(pairset)
+    
+  })
+
+
+MetabBatchSimple$methods(gen_Reijenga =
+  function(){
+                             
+    .self$refsamppairset$gen_Reijenga()
+    
+  })
+
+MetabBatchSimple$methods(annotate_landmarks =
+  function(){
+    
+    for(cpair in .self$refsamppairset$refsmp_pairs_l){
+      cpair$annotate_landmarks()
+    }
     
   })
 
@@ -210,8 +254,14 @@ MetabBatchSimple$methods(set_xcms_peakgrp_info =
 MetabBatchSimple$methods(align_xcms =
   function(ipkgrpp){
     
+    .self$set_xcms_peakgrp_info()
+    
     .self$xcms_XCMSnExp_aligned <-
       adjustRtime(.self$xcms_XCMSnExp, ipkgrpp)
+    
+    .self$refsamppairset$calc_adjust_mt_pairs_xcms()
+    # self$refsamppairset has object .self (MetabBatchSimple) in its field.
+    
     
   })
 

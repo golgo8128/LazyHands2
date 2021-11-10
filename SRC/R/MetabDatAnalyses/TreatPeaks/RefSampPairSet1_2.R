@@ -102,26 +102,37 @@ RefSampPairSet$methods(plot_peak_in_ephe =
            col_ref  = "gray",
            cols_smp = brewer.pal(7, "Set2"),
            xlim = NULL, ylim = NULL){
-                              
-    ephe_info_ref <-
-      .self$ref$get_ephe_info_from_metabid(imetabid)
-    ephe_ref <- ephe_info_ref$ephe
-    peak_ref <- ephe_info_ref$pk
-    peak_ref_range <- peak_ref$get_mt_range()
 
     annot_name <-
       as.character(.self$ref$annotlist$annotlist_dfrm[ imetabid,
-                                                       "Annotation Name" ])
-
-    if(!is.na(annot_name) && length(annot_name)){
-      title <- sprintf("[ m/z: %.4f ] %s: %s", ephe_ref$mz, imetabid, annot_name)
+                                                       "Annotation Name" ])    
+    mz <- .self$ref$annotlist$annotlist_dfrm[ imetabid, "m/z" ]
+      
+    ephe_info_ref <-
+      .self$ref$get_ephe_info_from_metabid(imetabid)
+    ephe_ref <- ephe_info_ref$ephe # Could be NULL
+    peak_ref <- ephe_info_ref$pk   # Could be NULL
+    if(is.null(peak_ref)){
+      peak_ref_range <- NULL
+      peak_ref_top   <- NULL
+      plot_title <- ""
     } else {
-      title <- sprintf("[ m/z: %.4f ] %s", ephe_info_ref$mz, imetabid)
-    }    
-          
+      peak_ref_range <- peak_ref$get_mt_range()
+      peak_ref_top   <- peak_ref$get_intensity_top()
+      
+      if(!is.na(annot_name) && length(annot_name)){
+        plot_title <- sprintf("[ m/z: %.4f ] %s: %s",
+                              ephe_ref$mz, imetabid, annot_name)
+      } else {
+        plot_title <- sprintf("[ m/z: %.4f ] %s",
+                              ephe_info_ref$mz, imetabid)
+      } 
+      
+    }
+
     peak_ranges_messed <- peak_ref_range
-    peak_intsty_tops   <- peak_ref$get_intensity_top()
-    
+    peak_intsty_tops   <- peak_ref_top
+
     for(i in 1:length(.self$smp_l)){
       smp  <- .self$smp_l[[ i ]] # .self$refsmp_pairs_l[[ i ]]$smp 
       pair <- .self$refsmp_pairs_l[[ i ]]
@@ -130,14 +141,34 @@ RefSampPairSet$methods(plot_peak_in_ephe =
         smp$get_ephe_info_from_metabid(imetabid)
       ephe_smp <- ephe_info_smp$ephe
       peak_smp <- ephe_info_smp$pk
-      
-      peak_smp_range     <- peak_smp$get_mt_range()
-      peak_smp_range_adj <- pair$map_to_ref(peak_smp_range)
+      if(is.null(peak_smp)){
+        peak_smp_range     <- NULL
+        peak_smp_top       <- NULL
+        peak_smp_range_adj <- NULL
+      } else {
+        peak_smp_range     <- peak_smp$get_mt_range()
+        peak_smp_top       <- peak_smp$get_intensity_top()
+        peak_smp_range_adj <- pair$map_to_ref(peak_smp_range)
+
+        if(plot_title == "" && !is.na(annot_name)
+           && length(annot_name)){
+          plot_title <- sprintf("[ m/z: %.4f ] %s: %s",
+                                ephe_smp$mz, imetabid, annot_name)
+        } else {
+          plot_title <- sprintf("[ m/z: %.4f ] %s",
+                                ephe_smp$mz, imetabid)
+        }  
+      }
+
       peak_ranges_messed <-
         c(peak_ranges_messed, peak_smp_range_adj)
       peak_intsty_tops   <- c(peak_intsty_tops,
-                              peak_smp$get_intensity_top())
+                              peak_smp_top)
+      
     }
+    
+    if(length(peak_ranges_messed) == 0){ return }
+  
     
     if(is.null(xlim)){     
       peak_pair_range <-
@@ -152,20 +183,27 @@ RefSampPairSet$methods(plot_peak_in_ephe =
     
     if(is.null(ylim)){
       intsty_extra <-
-        max(peak_ref$get_intensity_top(),
-            peak_smp$get_intensity_top()) * (1+extra_rate_intsty)
+        max(peak_intsty_tops) * (1+extra_rate_intsty)
       ylim <- c(0, intsty_extra)
       
     }
 
+    if(is.null(ephe_ref)){
+      ephe_ref <- .self$ref$find_ephe_mz(mz)
+    }
     
-    ephe_ref$plot_res_find_peak_simple(
-      col = col_ref,
-      xlim = xlim, ylim = ylim,
-      xlab = "Reference migration time (MT)",
-      ylab = "Intensity",
-      main = title,
-      ann = T)    
+    plot_exist <- FALSE
+    
+    if(!is.null(ephe_ref)){
+      ephe_ref$plot_res_find_peak_simple(
+        col = col_ref,
+        xlim = xlim, ylim = ylim,
+        xlab = "Reference migration time (MT)",
+        ylab = "Intensity",
+        main = plot_title,
+        ann = T)
+        plot_exist <- TRUE
+    }
     
     cols_smp <- 
       rep(cols_smp,
@@ -177,17 +215,24 @@ RefSampPairSet$methods(plot_peak_in_ephe =
       ephe_info_smp <-
         smp$get_ephe_info_from_metabid(imetabid)
       ephe_smp <- ephe_info_smp$ephe
-    
-      par(new=T)
+      if(is.null(ephe_smp)){
+        ephe_smp <- smp$find_ephe_mz(mz)
+      }
       
-      ephe_smp$plot_res_find_peak_simple(
-        col = cols_smp[ i ],
-        mts = pair$map_to_ref(ephe_smp$get_mts()),
-        xlim = xlim, ylim = ylim,
-        xlab = "Reference migration time (MT)",
-        ylab = "Intensity",
-        main = title,
-        ann = F)
+      if(!is.null(ephe_smp)){
+        
+        if(plot_exist){ par(new=T) }
+        
+        ephe_smp$plot_res_find_peak_simple(
+          col = cols_smp[ i ],
+          mts = pair$map_to_ref(ephe_smp$get_mts()),
+          xlim = xlim, ylim = ylim,
+          xlab = "Reference migration time (MT)",
+          ylab = "Intensity",
+          main = plot_title,
+          ann = F)
+        plot_exist <- TRUE
+      }
       
     }
       
@@ -204,7 +249,7 @@ RefSampPairSet$methods(plot_peak_in_ephe =
   })
 
 
-RefSampPairSet$methods(calc_adjust_mt_pairs =
+RefSampPairSet$methods(calc_adjust_mt_pairs_xcms =
   function(){
 
   adjust_mt_pairs_squashed <-
@@ -259,7 +304,8 @@ if(exists("rsunit_test_RefSampPairSet") &&
   # tmp_match_pk <- tmppairset$match_peak_simple("G011")
   # print(tmppairset$annotate_landmarks())
   tmppairset$plot_peak_in_ephe("107")
-  
+  tmppairset$plot_peak_in_ephe("P003")
+   
 }
 
 

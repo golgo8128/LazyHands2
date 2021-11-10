@@ -238,8 +238,18 @@ SampleMetabMeasure$methods(get_ephe_info_from_metabid =
 
     mz <- .self$annotlist$get_mz(imetabid)
     mt <- .self$annotlist$get_mt(imetabid)
-    ephe <- .self$find_ephe_mz(mz, imax_diff_mz = 0)
-    pk <- ephe$get_peak_from_metabid(imetabid)
+    
+    if(is.na(mz)){
+      ephe <- NULL
+    } else {
+      ephe <- .self$find_ephe_mz(mz, imax_diff_mz = 0)
+    }
+    
+    if(is.null(ephe)){
+      pk <- NULL
+    } else {
+      pk <- ephe$get_peak_from_metabid(imetabid)
+    }
     
     return(list(ephe = ephe, mt = mt, pk = pk))
 
