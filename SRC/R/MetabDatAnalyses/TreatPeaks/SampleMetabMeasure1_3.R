@@ -58,9 +58,11 @@ SampleMetabMeasure$methods(annotate_peak_metabid =
 SampleMetabMeasure$methods(find_bulk_peaks_all_ephe =
   function(...){
     for(ephe in .self$ephe_list){
-    
+      cat(sprintf("Searching for bulk peaks in m/z: %.4f of %s...\n",
+                  ephe$mz, .self$samplenam))
       ephe$find_bulk_peaks(...)
-        
+      # There may be multiple ephe's with same m/z
+      cat(sprintf("%d peak(s) found\n", length(ephe$peak_list)))  
     }
     
   })
@@ -113,6 +115,11 @@ SampleMetabMeasure$methods(update_annotlist_based_on_peaks =
 SampleMetabMeasure$methods(find_ephe_mz =
   function(imz, imax_diff_mz = NULL, ippm = 100){
 
+    if(length(.self$ephe_mzs) == 0){
+      return(NULL)
+    }
+    
+    
     if(is.null(imax_diff_mz)){
       diffs_mz   <- (.self$ephe_mzs - imz) / imz
       diff_thres <- ippm / 10^6
@@ -180,37 +187,67 @@ SampleMetabMeasure$methods(get_peaks =
   
 })
 
+
+SampleMetabMeasure$methods(get_annotated_peaks_val =
+  function(imz_range = NULL, imt_range = NULL,
+           valnam = "height_sum"){
+        
+    vals <- NULL                  
+    pks_accu <- .self$get_peaks(imz_range, imt_range)
+    for(pk in pks_accu){
+      if(nchar(pk$peak_annot_id)){
+        val <- pk$h[[ valnam ]]
+        names(val) <- pk$peak_annot_id
+        vals <- c(vals, val)
+        
+      }
+    }
+    
+    return(vals)
+    
+  })
+
+
 SampleMetabMeasure$methods(plot_peaks =
   function(imz_range = NULL, imt_range = NULL){
 
-    pks_l       <- .self$get_peaks()  
-    pk_top_mts  <- sapply(pks_l, function(tmppk){ tmppk$mt_top })
-    pk_mzs      <- sapply(pks_l, function(tmppk){ tmppk$epherogram_obj$mz })    
-    pk_scores   <- sapply(pks_l, function(tmppk){ tmppk$h$zscore })
-    pk_annotids <- sapply(pks_l, function(tmppk){ tmppk$peak_annot_id })
-    
-    annot_bools <- nchar(pk_annotids) > 0
-    
-    xlim <- extra_range(min(pk_top_mts), max(pk_top_mts))
-    ylim <- extra_range(min(pk_mzs)    , max(pk_mzs))
-    
-    # extra_range(val_min, val_max, ex_rate = 0.1
-    
-    plot(pk_top_mts, pk_mzs, 
-         xlab = "Migration time (MT)",
-         ylab = "m/z",
-         main = paste("Peaks in", .self$samplenam),
-         xlim = xlim, ylim = ylim)
-    
-    points(pk_top_mts[ annot_bools ],
-           pk_mzs[ annot_bools ],
-           col = "orange", pch = 16)
-    
-    text(pk_top_mts[ annot_bools ],
-         pk_mzs[ annot_bools ],
-         pk_annotids[ annot_bools ],
-         pos = 1,
-         col = "orange", pch = 16)
+    pks_l       <- .self$get_peaks()
+    if(length(pks_l)){
+      pk_top_mts  <- sapply(pks_l, function(tmppk){ tmppk$mt_top })
+      pk_mzs      <- sapply(pks_l, function(tmppk){ tmppk$epherogram_obj$mz })    
+      pk_scores   <- sapply(pks_l, function(tmppk){ tmppk$h$zscore })
+      pk_annotids <- sapply(pks_l, function(tmppk){ tmppk$peak_annot_id })
+      
+      annot_bools <- nchar(pk_annotids) > 0
+      
+      xlim <- extra_range(min(pk_top_mts), max(pk_top_mts))
+      ylim <- extra_range(min(pk_mzs)    , max(pk_mzs))
+      
+      # extra_range(val_min, val_max, ex_rate = 0.1
+      
+      plot(pk_top_mts, pk_mzs, 
+           xlab = "Migration time (MT)",
+           ylab = "m/z",
+           main = paste("Peaks in", .self$samplenam),
+           xlim = xlim, ylim = ylim)
+      
+      points(pk_top_mts[ annot_bools ],
+             pk_mzs[ annot_bools ],
+             col = "orange", pch = 16)
+      
+      if(any(annot_bools)){
+        text(pk_top_mts[ annot_bools ],
+             pk_mzs[ annot_bools ],
+             pk_annotids[ annot_bools ],
+             pos = 1,
+             col = "orange", pch = 16)
+      }
+    } else {
+      
+      plot(0, type="n", xlab="", ylab="", axes = F,
+           main = paste("Peaks in", .self$samplenam))
+      
+    }
 
 })
 
@@ -300,7 +337,7 @@ SampleMetabMeasure$methods(xcms_chromPeaks =
 
 SampleMetabMeasure$methods(import_mzML_peak_range_info =
   function(imzML_file,
-           ipeak_range_info_file){
+           ipeak_range_info_file, ippm = 1){
 
     source.RS("MetabDatAnalyses/TreatPeaks/PeakSingle1_1.R")
     
@@ -313,8 +350,8 @@ SampleMetabMeasure$methods(import_mzML_peak_range_info =
       readMSData(imzML_file, mode = "onDisk")
     
     mz_ranges <-
-      cbind(peak_range_info_dfrm[[ "Peak m/z" ]] * (1-0.1^6),
-            peak_range_info_dfrm[[ "Peak m/z" ]] * (1+0.1^6))
+      cbind(peak_range_info_dfrm[[ "Peak m/z" ]] * (1-ippm*0.1^6),
+            peak_range_info_dfrm[[ "Peak m/z" ]] * (1+ippm*0.1^6))
     
     chromats <-
       chromatogram(mzML_obj, mz = mz_ranges)
@@ -326,14 +363,25 @@ SampleMetabMeasure$methods(import_mzML_peak_range_info =
       
       metabid  <- rownames(peak_range_info_dfrm)[ i ]
       annot    <- peak_range_info_dfrm[ i, "Peak annotation" ]
-      print(annot)
       cmz      <- peak_range_info_dfrm[ metabid, "theoretical m/z" ] # Maybe better than Peak m/z
-      chromat  <- chromats[ i, 1 ]
-      # chromat <- chromatogram(mzML_obj,
-      #                         mz = c(cmz * (1-0.1^6), cmz * (1+0.1^6)))
-      ephe_mat <- cbind(rtime(chromat), intensity(chromat))
-      ephe     <- EPherogram(ephe_mat)
-      ephe$set_mz(cmz)
+      
+      ephe_exist <-
+        .self$find_ephe_mz(imz = cmz, ippm = ippm)
+      if(is.null(ephe_exist)){
+        chromat  <- chromats[ i, 1 ]
+        # chromat <- chromatogram(mzML_obj,
+        #                         mz = c(cmz * (1-ippm*0.1^6), cmz * (1+ippm*0.1^6)))
+        ephe_mat <- cbind(rtime(chromat), intensity(chromat))
+        ephe     <- EPherogram(ephe_mat)
+        ephe$set_mz(cmz)
+        cat(sprintf("[ %s ] Electropherogram for %s (m/z: %.4f) imported\n",
+                    .self$samplenam, annot, cmz))
+      } else {
+        ephe     <- ephe_exist
+        ephe_mat <- ephe$epherogram
+        cat(sprintf("[ %s ] Similar electropherogram for %s (m/z: %.4f) already registered\n",
+                    .self$samplenam, annot, cmz))
+      }
       
       mt_start <- peak_range_info_dfrm[ i, "Peak MT start" ] * 60
       mt_end   <- peak_range_info_dfrm[ i, "Peak MT end" ]   * 60
@@ -450,7 +498,7 @@ if(exists("rsunit_test_SampleMetabMeasure") &&
   tmp_ephe2 <- EPherogram(tmp_ephe_mat2)
   tmp_ephe2$set_mz(87.09)
   
-  tmp_smm <- SampleMetabMeasure()
+  tmp_smm <- SampleMetabMeasure(isamplenam = "Test Sample 1")
   tmp_smm$add_ephe(tmp_ephe1)
   tmp_smm$add_ephe(tmp_ephe2)
   

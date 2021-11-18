@@ -150,14 +150,15 @@ RefSampPairSet$methods(plot_peak_in_ephe =
         peak_smp_top       <- peak_smp$get_intensity_top()
         peak_smp_range_adj <- pair$map_to_ref(peak_smp_range)
 
-        if(plot_title == "" && !is.na(annot_name)
-           && length(annot_name)){
-          plot_title <- sprintf("[ m/z: %.4f ] %s: %s",
-                                ephe_smp$mz, imetabid, annot_name)
-        } else {
-          plot_title <- sprintf("[ m/z: %.4f ] %s",
-                                ephe_smp$mz, imetabid)
-        }  
+        if(plot_title == ""){
+          if(!is.na(annot_name) && length(annot_name)){
+            plot_title <- sprintf("[ m/z: %.4f ] %s: %s",
+                                  ephe_smp$mz, imetabid, annot_name)
+            } else {
+              plot_title <- sprintf("[ m/z: %.4f ] %s",
+                                    ephe_smp$mz, imetabid)
+            }
+        }
       }
 
       peak_ranges_messed <-

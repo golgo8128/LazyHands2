@@ -78,28 +78,47 @@ MetabBatchSimple$methods(import_from_mzml_files =
             isamplenam = filename_wo_ext(basename(fileNames(xcms_rawdat_obj))[ sample_idx ]))
         
         for(chromat_idx in 1:nrow(chromats_extracted)){
-          chromat <- chromats_extracted[ chromat_idx, sample_idx ]
+          mz_range <- target_mz_range_mat[ chromat_idx, ]
+          mz_mid   <- mean(mz_range)
           
-          migtimes <- rtime(chromat)
-          intsties <- intensity(chromat)
-          ephe_mat <- cbind(migtimes, intsties)
+          # print(c(mz_mid, mz_mid - mz_range[1]))
           
-          # if(any(is.na(migtimes))){
-          #   stop("NA in MTs")
-          # }
+          ephe_exist <- smm$find_ephe_mz(mz_mid, imax_diff_mz = mz_mid - mz_range[1])
           
-          # if(any(is.na(intsties))){
-          #   stop("NA in intensities")
-          # }
+          if(is.null(ephe_exist)){
           
-          ephe_mat <- ephe_mat[ !is.na(intsties), ]
-          
-          ephe <- EPherogram(ephe_mat)
-          ephe$set_mz(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
-          smm$add_ephe(ephe) 
-          
-          print(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, ])
-          
+            chromat  <- chromats_extracted[ chromat_idx, sample_idx ]
+            
+            migtimes <- rtime(chromat)
+            intsties <- intensity(chromat)
+            ephe_mat <- cbind(migtimes, intsties)
+            
+            # if(any(is.na(migtimes))){
+            #   stop("NA in MTs")
+            # }
+            
+            # if(any(is.na(intsties))){
+            #   stop("NA in intensities")
+            # }
+            
+            ephe_mat <- ephe_mat[ !is.na(intsties), ]
+            
+            ephe <- EPherogram(ephe_mat)
+            ephe$set_mz(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, "m/z" ])
+            smm$add_ephe(ephe) 
+            
+            print(smm)
+            print(.self$ref_annotlist$annotlist_dfrm[ chromat_idx, c("Annotation Name",
+                                                                     "m/z", "MT")])
+            # print(mz_range)
+         
+          } else {
+            cat(sprintf("[ %s ] Similar electropherogram for %s (m/z: %.4f) already registered\n",
+                        smm$samplenam,
+                        .self$ref_annotlist$annotlist_dfrm[ chromat_idx, "Annotation Name" ],
+                        mz_mid))
+          }
+               
         }
         
         .self$add_sample(smm)
@@ -194,6 +213,61 @@ MetabBatchSimple$methods(annotate_landmarks =
   })
 
 
+MetabBatchSimple$methods(plot_peak_in_ephe =
+  function(imetabid,
+           extra_rate_mt     = 3.0,
+           extra_rate_intsty = 0.2,
+           col_ref  = "gray",
+           cols_smp = brewer.pal(7, "Set2"),
+           xlim = NULL, ylim = NULL){
+    
+    .self$refsamppairset$plot_peak_in_ephe(
+      imetabid          = imetabid,
+      extra_rate_mt     = extra_rate_mt,
+      extra_rate_intsty = extra_rate_intsty,
+      col_ref           = col_ref,
+      cols_smp          = cols_smp,
+      xlim = xlim, ylim = ylim)
+    
+  })
+
+
+MetabBatchSimple$methods(find_bulk_peaks_all_samples =
+  function(...){
+    
+    for(msample in .self$sample_metab_meas_list){
+      
+      msample$find_bulk_peaks_all_ephe(...)
+      
+    }
+    
+  })
+
+
+MetabBatchSimple$methods(get_annotated_peaks_val_mat =
+  function(imz_range = NULL, imt_range = NULL,
+    valnam = "height_sum"){
+    
+    
+    odfrm <- NULL
+    for(smm in .self$sample_metab_meas_list){
+      cdfrm <- data.frame(smm$get_annotated_peaks_val())
+      colnames(cdfrm) <- smm$samplenam
+      if(is.null(odfrm)){
+        odfrm <- cdfrm
+      } else {
+        odfrm <- merge(odfrm, cdfrm, by = "row.names", all = T)
+        rownames(odfrm) <- odfrm[[ "Row.names" ]]
+        odfrm <- odfrm[, colnames(odfrm) != "Row.names" ]
+        
+      }
+    }
+    
+    return(as.matrix(odfrm))
+    
+  })
+
+
 MetabBatchSimple$methods(set_xcms_peakgrp_info =
   function(){
 
@@ -266,18 +340,6 @@ MetabBatchSimple$methods(align_xcms =
   })
 
 
-MetabBatchSimple$methods(find_bulk_peaks_all_samples =
-  function(...){
-
-    for(msample in .self$sample_metab_meas_list){
-     
-      msample$find_bulk_peaks_all_ephe(...)
-       
-    }
-    
-  })
-
-
 if(exists("rsunit_test_MetabBatchSimple") &&
    rsunit_test_MetabBatchSimple){
 
@@ -315,12 +377,12 @@ if(exists("rsunit_test_MetabBatchSimple") &&
   tmp_ephe_mat2 <- cbind(tmp_mt2, tmp_intsty2)
   tmp_ephe2 <- EPherogram(tmp_ephe_mat2, 76.87)
   
-  tmp_smm1 <- SampleMetabMeasure("Hypothetical sample file 1")
+  tmp_smm1 <- SampleMetabMeasure("Hypothetical sample file 1", "Test sample 1")
   tmp_smm1$add_ephe(tmp_ephe1)
   tmp_smm1$add_ephe(tmp_ephe2)
   tmp_batch$add_sample(tmp_smm1)
 
-  tmp_smm2 <- SampleMetabMeasure("Hypothetical sample file 2")
+  tmp_smm2 <- SampleMetabMeasure("Hypothetical sample file 2", "Test sample 2")
   tmp_smm2$add_ephe(tmp_ephe1)
   # ??? Adding the electropherogram that appears in sample 1 as well
   tmp_smm2$add_ephe(tmp_ephe2)

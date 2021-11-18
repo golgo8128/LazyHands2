@@ -4,7 +4,7 @@ library(xcms)
 source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
-source.RS("MetabDatAnalyses/TreatPeaks/Epherogram1_2.R")
+source.RS("MetabDatAnalyses/TreatPeaks/EPherogram1_3.R")
 source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_2.R")
 source.RS("FilePath/rsFilePath1.R")
 
@@ -53,7 +53,7 @@ plotAdjustedRtime(batch_$xcms_XCMSnExp_aligned,
                   col = 1:length(fileNames(batch_$xcms_MSnbase)),
                   peakGroupsPch = 1)
 
-
+# batch_$plot_peak_in_ephe(imetabid = "G011")
 
 isample_mt <- 1000
 isample    <- batch_$sample_metab_meas_list[[2]] # "200uM.mzML"
@@ -61,4 +61,6 @@ isample    <- batch_$sample_metab_meas_list[[2]] # "200uM.mzML"
 ref_mt <- batch_$refsamppairset$smm_unalign_to_ref_unalign_mt(isample, isample_mt)
 print(ref_mt)
 print(batch_$refsamppairset$ref_unalign_to_smm_unalign_mt(isample, ref_mt))
+
+print(t(t(batch_$get_annotated_peaks_val_mat()) / batch_$get_annotated_peaks_val_mat()[ "107",]))
 
