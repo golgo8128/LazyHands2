@@ -90,6 +90,14 @@ RefSampPairSingle$methods(smm_unalign_to_ref_unalign_mt =
   })
 
 
+RefSampPairSingle$methods(smm_unalign_to_ref_unalign_mts =
+  function(isample_mts){
+    
+    return(sapply(isample_mts,
+                  .self$smm_unalign_to_ref_unalign_mt))
+    
+  })
+
 RefSampPairSingle$methods(ref_unalign_to_smm_unalign_mt =
   function(iref_mt){
   
@@ -157,8 +165,17 @@ RefSampPairSingle$methods(plot_peak_in_ephe =
            extra_rate_mt     = 3.0,
            extra_rate_intsty = 0.2,
            col_ref = "gray", col_smp = "red",
-           xlim = NULL, ylim = NULL){
+           xlim = NULL, ylim = NULL,
+           align_mode = "reijenga"){
 
+    if(align_mode == "reijenga"){
+      xlab <- "Reference migration time (MT)"
+    } else if(align_mode == "loess"){
+      xlab <- "Reference migration time (MT)"
+    } else {
+      xlab <- "Migration time (MT)"
+    }
+    
     ephe_info_ref <-
       .self$ref$get_ephe_info_from_metabid(imetabid)
     ephe_info_smp <-
@@ -172,8 +189,16 @@ RefSampPairSingle$methods(plot_peak_in_ephe =
     
     peak_ref_range     <- peak_ref$get_mt_range()
     peak_smp_range     <- peak_smp$get_mt_range()
-    peak_smp_range_adj <- .self$map_to_ref(peak_smp_range)
-
+    
+    if(align_mode == "reijenga"){
+      peak_smp_range_adj <- .self$map_to_ref(peak_smp_range)
+    } else if(align_mode == "loess"){
+      peak_smp_range_adj <-
+        .self$smm_unalign_to_ref_unalign_mts(peak_smp_range)
+    } else {
+      peak_smp_range_adj <- peak_smp_range
+    }
+    
     annot_name <-
       as.character(.self$ref$annotlist$annotlist_dfrm[ imetabid,
                                                        "Annotation Name" ])
@@ -206,20 +231,28 @@ RefSampPairSingle$methods(plot_peak_in_ephe =
     ephe_ref$plot_res_find_peak_simple(
       col = col_ref,
       xlim = xlim, ylim = ylim,
-      xlab = "Reference migration time (MT)",
+      xlab = xlab,
       ylab = "Intensity",
       main = title,
       ann = F)    
     
     par(new=T) 
     
-    mts_adj <- .self$map_to_ref(ephe_smp$get_mts())
     
+    if(align_mode == "reijenga"){
+      mts_adj <- .self$map_to_ref(ephe_smp$get_mts())
+    } else if(align_mode == "loess"){
+      mts_adj <-
+        .self$smm_unalign_to_ref_unalign_mts(ephe_smp$get_mts())
+    } else {
+      mts_adj <- ephe_smp$get_mts()
+    }     
+
     ephe_smp$plot_res_find_peak_simple(
       col = col_smp,
       mts = mts_adj,
       xlim = xlim, ylim = ylim,
-      xlab = "Reference migration time (MT)",
+      xlab = xlab,
       ylab = "Intensity",
       main = title)
     par(new=F) 

@@ -180,7 +180,7 @@ MetabBatchSimple$methods(gather_annot_mt =
 MetabBatchSimple$methods(gen_refsamppairset =
   function(){
     
-    source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_2.R")
+    source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_3.R")
     
     pairset <- RefSampPairSet(.self)
     pairset$add_ref(.self$ref)
@@ -219,7 +219,8 @@ MetabBatchSimple$methods(plot_peak_in_ephe =
            extra_rate_intsty = 0.2,
            col_ref  = "gray",
            cols_smp = brewer.pal(7, "Set2"),
-           xlim = NULL, ylim = NULL){
+           xlim = NULL, ylim = NULL,
+           align_mode = "reijenga"){
     
     .self$refsamppairset$plot_peak_in_ephe(
       imetabid          = imetabid,
@@ -227,7 +228,8 @@ MetabBatchSimple$methods(plot_peak_in_ephe =
       extra_rate_intsty = extra_rate_intsty,
       col_ref           = col_ref,
       cols_smp          = cols_smp,
-      xlim = xlim, ylim = ylim)
+      xlim = xlim, ylim = ylim,
+      align_mode = align_mode)
     
   })
 
