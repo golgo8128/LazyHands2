@@ -4,11 +4,10 @@
 #
 # On Windows, escapes are necessary if using "\" separator, i.e. "C:\\Docu\\File.doc"
 
-RS_R_Pack4_ROOT <<-
-  normalizePath(file.path(Sys.getenv("RS_PROG_DIR"), "rs_R", "rs_R_Pack4"),
-                winslash = "/")
-  # file.path(Sys.getenv("RS_PROG_DIR"), "rs_R", "rs_R_Pack4")
-  #"/Users/rsaito/UNIX/rs_Progs/rs_R/rs_R_Pack4"
+RS_R_Pack4_ROOT <<- normalizePath(file.path(Sys.getenv("RS_PROG_DIR"), "rs_R", "rs_R_Pack4"), winslash = "/")
+  # normalizePath(file.path(Sys.getenv("RS_PROG_DIR"), "rs_R", "rs_R_Pack4"),
+  #               winslash = "/")
+
 
 RS_R_Pack4_DIR <<- c("./",
                      RS_R_Pack4_ROOT,

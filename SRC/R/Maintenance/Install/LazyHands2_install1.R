@@ -1,5 +1,5 @@
 
-rs_R_Pack_dir_name <- "rs_R_Pack4"
+rs_R_Pack_dir_name <- "LazyHands2"
 dot_Rprofile_org   <- file.path("Maintenance", "Startup", "dot_Rprofile10.R")
 
 cur_time_str  <- format(Sys.time(), "%Y%m%d%H%M%S")
@@ -32,7 +32,10 @@ dot_Rprofile_lines <- readLines(fh)
 close(fh)
 
 target_line_idx <- which(grepl("^\\s*RS_R_Pack4_ROOT\\s*<<-", dot_Rprofile_lines, perl = T))
-dot_Rprofile_lines[ target_line_idx ] <- sprintf("RS_R_Pack4_ROOT <<- \"%s\" # Configured on %s", rs_R_Pack4_dir, cur_time_str)
+dot_Rprofile_lines[ target_line_idx ] <-
+  sprintf("RS_R_Pack4_ROOT <<- \"%s\" # Configured on %s", rs_R_Pack4_dir, cur_time_str)
+  # normalizePath(file.path(Sys.getenv("RS_PROG_DIR"), "rs_R", "rs_R_Pack4"), winslash = "/")
+
 
 fw <- file(dot_Rprofile_cano_path, open = "w")
 writeLines(dot_Rprofile_lines, fw)
