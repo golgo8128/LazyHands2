@@ -1,15 +1,16 @@
 
-rs_R_Pack_dir_name <- "LazyHands2"
-dot_Rprofile_org   <- file.path("Maintenance", "Startup", "dot_Rprofile10.R")
+distr_pack_name  <- "LazyHands2"
+rs_R_Pack_dir_name <- "R"
+dot_Rprofile_org <- file.path("Maintenance", "Startup", "dot_Rprofile10.R")
 
 cur_time_str  <- format(Sys.time(), "%Y%m%d%H%M%S")
 cur_wdir      <- getwd()
 cur_wdir_sepd <- strsplit(cur_wdir, .Platform$file.sep)[[1]]
 
-if(!(rs_R_Pack_dir_name %in% cur_wdir_sepd)){
+if(!(distr_pack_name %in% cur_wdir_sepd)){
   stop(paste("This installation script must be invoked via \"source\" function",
              "after setting the current working directory to the one in",
-             rs_R_Pack_dir_name))
+             distr_pack_name))
 }
 
 rs_R_Pack4_dir             <- paste(cur_wdir_sepd[1:max(which(rs_R_Pack_dir_name == cur_wdir_sepd))],
@@ -43,5 +44,5 @@ close(fw)
 
 source(dot_Rprofile_cano_path)
 
-cat(sprintf("Configuring %s installation on %s has been completed.\n", rs_R_Pack_dir_name, rs_R_Pack4_dir))
+cat(sprintf("Configuring %s installation on %s has been completed.\n", distr_pack_name, rs_R_Pack4_dir))
 cat(sprintf("However, make sure to install necessary R packages.\n"))
