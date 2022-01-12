@@ -111,10 +111,12 @@ RefSampPairSet$methods(plot_peak_in_ephe =
                                                          "Annotation Name" ])
       mz <- .self$ref$annotlist$annotlist_dfrm[ imetabid, "m/z" ] # Can be NA
       if(is.null(extra_rate_mt)){ extra_rate_mt = 3.0 }
-    } else {
+    } else if(!is.null(imz)){
       annot_name <- ""
       mz <- imz
       if(is.null(extra_rate_mt)){ extra_rate_mt = 0.0 }
+    } else {
+      stop("No metabolite ID or m/z given for multiple electropherogram plotting")
     }
       
     if(align_mode == "reijenga"){
@@ -233,97 +235,102 @@ RefSampPairSet$methods(plot_peak_in_ephe =
       
     }
     
-    if(length(peak_ranges_messed) == 0){ return }
+    if(length(peak_intsty_tops)){
   
-    if(is.null(xlim)){     
-      peak_pair_range <-
-        c(min(peak_ranges_messed),
-          max(peak_ranges_messed))
-      xlim <-
-        extra_range(peak_pair_range[1],
-                    peak_pair_range[2],
-                    ex_rate = extra_rate_mt,
-                    conv_int = F)
-    }
-    
-    if(is.null(ylim)){
-      intsty_extra <-
-        max(peak_intsty_tops) * (1+extra_rate_intsty)
-      ylim <- c(0, intsty_extra)
-      
-    }
-
-    if(is.null(ephe_ref) && !is.na(mz)){
-      ephe_ref <- .self$ref$find_ephe_mz(mz)
-    }
-    
-    plot_exist <- FALSE
-    
-    if(!is.null(ephe_ref)){
-      ephe_ref$plot_res_find_peak_simple(
-        col = col_ref,
-        xlim = xlim, ylim = ylim,
-        xlab = xlab,
-        ylab = "Intensity",
-        main = plot_title,
-        ann = T)
-        plot_exist <- TRUE
-    }
-    
-    cols_smp <- 
-      rep(cols_smp,
-          ceiling(length(.self$smp_l) / length(cols_smp)))[ 1:length(.self$smp_l) ]
-    
-    for(i in 1:length(.self$smp_l)){
-      smp  <- .self$smp_l[[ i ]]
-      pair <- .self$refsmp_pairs_l[[ i ]]
-      ephe_smp <- NULL
-      if(imetabid != ""){
-        ephe_info_smp <-
-          smp$get_ephe_info_from_metabid(imetabid)
-        ephe_smp <- ephe_info_smp$ephe
-      }
-      if(is.null(ephe_smp) && !is.na(mz)){
-        ephe_smp <- smp$find_ephe_mz(mz)
+      if(is.null(xlim)){     
+        peak_pair_range <-
+          c(min(peak_ranges_messed),
+            max(peak_ranges_messed))
+        xlim <-
+          extra_range(peak_pair_range[1],
+                      peak_pair_range[2],
+                      ex_rate = extra_rate_mt,
+                      conv_int = F)
       }
       
-      if(!is.null(ephe_smp)){
+      if(is.null(ylim)){
+        intsty_extra <-
+          max(peak_intsty_tops) * (1+extra_rate_intsty)
+        ylim <- c(0, intsty_extra)
         
-        if(plot_exist){ par(new=T) }
-        
-
-        if(align_mode == "reijenga"){
-          mts <- pair$map_to_ref(ephe_smp$get_mts())
-        } else if(align_mode == "loess"){
-          mts <-
-            pair$smm_unalign_to_ref_unalign_mts(ephe_smp$get_mts())
-        } else {
-          mts <- ephe_smp$get_mts()
-        }        
-        
-        ephe_smp$plot_res_find_peak_simple(
-          col = cols_smp[ i ],
-          mts = mts,
+      }
+  
+      if(is.null(ephe_ref) && !is.na(mz)){
+        ephe_ref <- .self$ref$find_ephe_mz(mz)
+      }
+      
+      plot_exist <- FALSE
+      
+      if(!is.null(ephe_ref)){
+        ephe_ref$plot_res_find_peak_simple(
+          col = col_ref,
           xlim = xlim, ylim = ylim,
           xlab = xlab,
           ylab = "Intensity",
           main = plot_title,
-          ann = F)
-        plot_exist <- TRUE
+          ann = T)
+          plot_exist <- TRUE
       }
       
-    }
+      cols_smp <- 
+        rep(cols_smp,
+            ceiling(length(.self$smp_l) / length(cols_smp)))[ 1:length(.self$smp_l) ]
       
-    par(new=F) 
+      for(i in 1:length(.self$smp_l)){
+        smp  <- .self$smp_l[[ i ]]
+        pair <- .self$refsmp_pairs_l[[ i ]]
+        ephe_smp <- NULL
+        if(imetabid != ""){
+          ephe_info_smp <-
+            smp$get_ephe_info_from_metabid(imetabid)
+          ephe_smp <- ephe_info_smp$ephe
+        }
+        if(is.null(ephe_smp) && !is.na(mz)){
+          ephe_smp <- smp$find_ephe_mz(mz)
+        }
+        
+        if(!is.null(ephe_smp)){
+          
+          if(plot_exist){ par(new=T) }
+          
+  
+          if(align_mode == "reijenga"){
+            mts <- pair$map_to_ref(ephe_smp$get_mts())
+          } else if(align_mode == "loess"){
+            mts <-
+              pair$smm_unalign_to_ref_unalign_mts(ephe_smp$get_mts())
+          } else {
+            mts <- ephe_smp$get_mts()
+          }        
+          
+          ephe_smp$plot_res_find_peak_simple(
+            col = cols_smp[ i ],
+            mts = mts,
+            xlim = xlim, ylim = ylim,
+            xlab = xlab,
+            ylab = "Intensity",
+            main = plot_title,
+            ann  = !plot_exist)
+          plot_exist <- TRUE
+        }
+        
+      }
+        
+      par(new=F) 
+      
+      if(plot_exist){
+        legend("topleft",
+               legend = c(.self$ref$samplenam,
+                          sapply(.self$smp_l,
+                                 function(tmpsmp){ tmpsmp$samplenam })),
+               col    = c(col_ref, cols_smp),
+               lty    = 1)
+      }
     
-    legend("topleft",
-           legend = c(.self$ref$samplenam,
-                      sapply(.self$smp_l,
-                             function(tmpsmp){ tmpsmp$samplenam })),
-           col    = c(col_ref, cols_smp),
-           lty    = 1)
+    }
     
-                              
+    return(length(peak_intsty_tops))
+                                
   })
 
 

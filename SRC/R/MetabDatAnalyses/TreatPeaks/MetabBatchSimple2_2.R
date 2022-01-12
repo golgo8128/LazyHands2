@@ -214,8 +214,9 @@ MetabBatchSimple$methods(annotate_landmarks =
 
 
 MetabBatchSimple$methods(plot_peak_in_ephe =
-  function(imetabid,
-           extra_rate_mt     = 3.0,
+  function(imetabid = "",
+           imz = NULL, imax_diff_mz = NULL, ippm = 100,
+           extra_rate_mt     = NULL,
            extra_rate_intsty = 0.2,
            col_ref  = "gray",
            cols_smp = brewer.pal(7, "Set2"),
@@ -224,6 +225,7 @@ MetabBatchSimple$methods(plot_peak_in_ephe =
     
     .self$refsamppairset$plot_peak_in_ephe(
       imetabid          = imetabid,
+      imz = imz, imax_diff_mz = imax_diff_mz, ippm = ippm,
       extra_rate_mt     = extra_rate_mt,
       extra_rate_intsty = extra_rate_intsty,
       col_ref           = col_ref,
@@ -345,7 +347,7 @@ MetabBatchSimple$methods(align_xcms =
 if(exists("rsunit_test_MetabBatchSimple") &&
    rsunit_test_MetabBatchSimple){
 
-  source.RS("MetabDatAnalyses/TreatPeaks/Epherogram1_2.R")
+  source.RS("MetabDatAnalyses/TreatPeaks/EPherogram1_2.R")
   source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
 
   tmp_batch <- MetabBatchSimple()

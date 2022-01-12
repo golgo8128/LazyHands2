@@ -68,6 +68,8 @@ print(batch_$refsamppairset$ref_unalign_to_smm_unalign_mt(isample, ref_mt))
 print(t(t(batch_$get_annotated_peaks_val_mat()) / batch_$get_annotated_peaks_val_mat()[ "107",]))
 # max(t(t(batch_$get_annotated_peaks_val_mat()) / batch_$get_annotated_peaks_val_mat()[ "107",]), na.rm = T)
 
+batch_$plot_peak_in_ephe(imz = 132.101564195421, xlim = c(750, 900), align_mode = "loess")
+
 area_titr <-
   batch_$get_annotated_peaks_val_mat()[ ,
                                        colnames(batch_$get_annotated_peaks_val_mat()) != "STD112" ]

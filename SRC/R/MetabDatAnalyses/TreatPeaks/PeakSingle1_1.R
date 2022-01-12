@@ -1,5 +1,5 @@
 
-source.RS("MetabDatAnalyses/TreatPeaks/Epherogram1_3.R")
+source.RS("MetabDatAnalyses/TreatPeaks/EPherogram1_3.R")
 
 # For unit test, rsunit_test_PeakSingle <- T and source it.
 

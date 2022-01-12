@@ -209,7 +209,14 @@ SampleMetabMeasure$methods(get_annotated_peaks_val =
 
 
 SampleMetabMeasure$methods(plot_peaks =
-  function(imz_range = NULL, imt_range = NULL){
+  function(imz_range = NULL, imt_range = NULL,
+           plot_size_param = list(
+             sgm_center_x = 5,
+             sgm_slope    = 1,
+             sgm_base_y   = 0.1,
+             sgm_range_y  = 2.9
+                                )
+           ){
 
     pks_l       <- .self$get_peaks()
     if(length(pks_l)){
@@ -217,7 +224,12 @@ SampleMetabMeasure$methods(plot_peaks =
       pk_mzs      <- sapply(pks_l, function(tmppk){ tmppk$epherogram_obj$mz })    
       pk_scores   <- sapply(pks_l, function(tmppk){ tmppk$h$zscore })
       pk_annotids <- sapply(pks_l, function(tmppk){ tmppk$peak_annot_id })
-      
+
+      plot_sizes <-
+        plot_size_param$sgm_range_y / (
+          1 + exp(-plot_size_param$sgm_slope * (pk_scores - plot_size_param$sgm_center_x))
+        ) + plot_size_param$sgm_base_y
+            
       annot_bools <- nchar(pk_annotids) > 0
       
       xlim <- extra_range(min(pk_top_mts), max(pk_top_mts))
@@ -225,7 +237,8 @@ SampleMetabMeasure$methods(plot_peaks =
       
       # extra_range(val_min, val_max, ex_rate = 0.1
       
-      plot(pk_top_mts, pk_mzs, 
+      plot(pk_top_mts, pk_mzs,
+           cex = plot_sizes,
            xlab = "Migration time (MT)",
            ylab = "m/z",
            main = paste("Peaks in", .self$samplenam),
@@ -233,6 +246,7 @@ SampleMetabMeasure$methods(plot_peaks =
       
       points(pk_top_mts[ annot_bools ],
              pk_mzs[ annot_bools ],
+             cex = plot_sizes[ annot_bools ],
              col = "orange", pch = 16)
       
       if(any(annot_bools)){
@@ -240,7 +254,7 @@ SampleMetabMeasure$methods(plot_peaks =
              pk_mzs[ annot_bools ],
              pk_annotids[ annot_bools ],
              pos = 1,
-             col = "orange", pch = 16)
+             col = "orange4", pch = 16)
       }
     } else {
       
@@ -465,7 +479,7 @@ SampleMetabMeasure$methods(import_peak_range_info =
 if(exists("rsunit_test_SampleMetabMeasure") &&
    rsunit_test_SampleMetabMeasure){
 
-  source.RS("MetabDatAnalyses/TreatPeaks/Epherogram1_2.R")
+  source.RS("MetabDatAnalyses/TreatPeaks/EPherogram1_3.R")
   
   tmp_intsty1 <-
     c(0,0,0,3,2,4,3,1,2,3,2,3,4,3,2,1,2,3,2,1,
