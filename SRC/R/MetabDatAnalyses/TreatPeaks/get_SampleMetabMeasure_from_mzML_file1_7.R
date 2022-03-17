@@ -5,7 +5,7 @@ source.RS("MetabDatAnalyses/TreatPeaks/AnnotList1_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/MetabBatchSimple2_2.R")
 source.RS("MetabDatAnalyses/TreatPeaks/SampleMetabMeasure1_3.R")
 source.RS("MetabDatAnalyses/TreatPeaks/EPherogram1_3.R")
-source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_3.R")
+source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_4.R")
 source.RS("FilePath/rsFilePath1.R")
 
 
@@ -42,9 +42,6 @@ batch_$find_bulk_peaks_all_ephe()
 batch_$find_IS_marks()
 batch_$gen_Reijenga()
 batch_$annotate_landmarks()
-
-pkgrpp <- PeakGroupsParam(minFraction = 0.75, smooth = "loess")
-batch_$align_xcms(pkgrpp)
 
 plot(rtime(batch_$xcms_XCMSnExp), rtime(batch_$xcms_XCMSnExp_aligned),
      pch = 16, cex = 0.25, col = fromFile(batch_$xcms_XCMSnExp_aligned))

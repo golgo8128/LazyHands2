@@ -1,6 +1,7 @@
 
 source.RS("FilePath/rsFilePath1.R")
 source.RS("String1/regexpr_parenthesis_pick1.R")
+source.RS("DataStruct1/merge_lists1_1.R")
 
 # For unit test, rsunit_test_AnnotList <- T and source this.
 
@@ -176,6 +177,54 @@ AnnotList$methods(get_mt_range = function(imetab_id){
   
 })
 
+
+AnnotList$methods(get_metabs_similar_mz
+  = function(imetab_id = NULL, imz = NULL,
+             ippm = 100){
+    
+  # imetab_id itself may be included.
+
+  if(is.null(imetab_id)){
+    if(is.null(imz)){
+      stop("In method get_metabs_similar_mz, neither imetab_id nor imz is specified.")
+    } else {
+      cmz <- imz
+    }
+  } else {
+    cmz <- .self$annotlist_dfrm[ imetab_id, "m/z" ]    
+  }
+    
+  mmetabids <- NULL
+
+  if(is.na(cmz)){
+    warning(sprintf("m/z not defined for the metabolite \"%s\".", imetab_id))
+  } else {
+    mzs <- .self$annotlist_dfrm[ , "m/z" ]
+    calc_ppm <- abs((cmz - mzs) / mzs) * 10^6
+    
+    stated_ppm <- rep(ippm, length(calc_ppm))
+
+    if("ppm" %in% colnames(.self$annotlist_dfrm)){
+      dfrm_stated_ppm <- .self$annotlist_dfrm[, "ppm" ] 
+      stated_ppm[ !is.na(dfrm_stated_ppm) ] <- dfrm_stated_ppm[ !is.na(dfrm_stated_ppm) ]
+    }
+
+    mmetabids <- rownames(.self$annotlist_dfrm)[ 
+      (!is.na(calc_ppm)) & calc_ppm <= stated_ppm ]
+    
+  }
+  
+  mts          <- .self$annotlist_dfrm[ mmetabids, "MT" ]
+  sorted_idx   <- order(mts)
+  mts          <- mts[ sorted_idx ]
+  ret_metabids <- mmetabids[ sorted_idx ]
+  names(mts) <- ret_metabids
+  
+  return(mts)
+  
+})
+  
+
 AnnotList$methods(get_mz_range_dfrm = function(imfactor = 1){
   
   target_mz <- .self$annotlist_dfrm$`m/z`
@@ -191,6 +240,48 @@ AnnotList$methods(get_mz_range_dfrm = function(imfactor = 1){
 })
 
 
+AnnotList$methods(
+  plot_peak_poss_simple =
+    function(imetab_id = NULL, imz = NULL, ippm = 100,
+             mts = NULL, y_pos = 0, col = "black",
+             ...){
+      
+      if(!is.null(imetab_id)){
+        plot_title <- imetab_id
+      } else if(!is.null(imz)){
+        plot_title <- sprintf("Peak positions in m/z: %f", imz)
+      }
+      
+      mts <-
+        .self$get_metabs_similar_mz(imetab_id = imetab_id,
+                                    imz = imz, ippm = ippm)
+      
+      
+      if(length(mts) == 0){ return(NA) }
+
+      metab_ids <- names(mts)
+      
+      y <- rep(y_pos, length(mts))
+      
+      default_varargs <- 
+        list(x = mts,
+             y = y, # Intensities?
+             col  = col,
+             type = "p",
+             pch = "*",
+             cex = 3,
+             xlab = "Migration time (MT)",
+             ylab = "",
+             main = plot_title)
+      ivarargs_l      <- list(...)
+      
+      do.call(plot, merge_two_lists(default_varargs,
+                                    ivarargs_l))
+      text(mts, y, metab_ids, pos = 3, col = col)
+
+    })
+
+
 # Unit test
 if(exists("rsunit_test_AnnotList") && rsunit_test_AnnotList){
 
@@ -200,11 +291,18 @@ if(exists("rsunit_test_AnnotList") && rsunit_test_AnnotList){
             "C_114_annotlist_160809-2_RSC1.csv")
   
   tmp_annotlist1 <- AnnotList(example_annotlist_file1)
-  tmp_annotlist2 <- AnnotList(tmp_annotlist1)
+  tmp_annotlist2 <- AnnotList(tmp_annotlist1) # MTs and m/z's will be NA.
   tmp_annotlist2$reg_mz("XXX", 12.345)
- 
+  tmp_annotlist2$reg_mz("GX1", 76.0393); tmp_annotlist2$reg_mt("GX1", 610) 
+  tmp_annotlist2$reg_mz("GX2", 76.0395); tmp_annotlist2$reg_mt("GX2", 600) 
+  tmp_annotlist2$reg_mz("GX3", 76.0396); tmp_annotlist2$reg_mt("GX3", 620) 
+  
+  print(tmp_annotlist2$get_metabs_similar_mz(imz = 76.0395))    
+  tmp_annotlist2$plot_peak_poss_simple(imz = 76.0395)
+  
   tmp_annotlist3 <- AnnotList()
   tmp_annotlist3$reg_mz("XXX", 12.345)
+  
 }
 
 

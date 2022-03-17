@@ -292,7 +292,7 @@ EPherogram$methods(plot_res_find_peak_simple =
            ylim = ylim,
            xlab = "Migration time (MT)",
            ylab = "Intensity",
-           main = sprintf("Electropherogram of %f", .self$mz))
+           main = sprintf("Electropherogram of m/z: %f", .self$mz))
     ivarargs_l      <- list(...)
     
     do.call(plot, merge_two_lists(default_varargs,

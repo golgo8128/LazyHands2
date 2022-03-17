@@ -20,9 +20,30 @@ MetabBatchSimple <-
       )) # "ANY" as generic class name?
 
 
+MetabBatchSimple$methods(
+  show = function(){
+    
+    cat("***** Batch information *****\n")
+    if(!is.null(.self$ref)){
+      cat(sprintf("Reference: %s\n",
+                  .self$ref$samplenam))
+    }
+    
+    for(i in 1:length(.self$sample_metab_meas_list)){
+      cat(sprintf("Sample %2d: %s\n",
+                  i, .self$sample_metab_meas_list[[i]]$samplenam))
+    }
+    
+    cat("\n")
+                               
+})
+
+
 MetabBatchSimple$methods(initialize =
     function(iannotlist = NULL){
 
+      .self$ref <- NULL
+      
       if(!is.null(iannotlist)){
         .self$ref_annotlist <- iannotlist
       }
@@ -140,6 +161,18 @@ MetabBatchSimple$methods(
     })
 
 
+MetabBatchSimple$methods(find_bulk_peaks_all_samples =
+                           function(...){
+                             
+    for(msample in .self$sample_metab_meas_list){
+                               
+        msample$find_bulk_peaks_all_ephe(...)
+                               
+    }
+                             
+})
+
+
 MetabBatchSimple$methods(
   find_IS_marks =
     function(){
@@ -180,7 +213,7 @@ MetabBatchSimple$methods(gather_annot_mt =
 MetabBatchSimple$methods(gen_refsamppairset =
   function(){
     
-    source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_3.R")
+    source.RS("MetabDatAnalyses/TreatPeaks/RefSampPairSet1_4.R")
     
     pairset <- RefSampPairSet(.self)
     pairset$add_ref(.self$ref)
@@ -232,18 +265,6 @@ MetabBatchSimple$methods(plot_peak_in_ephe =
       cols_smp          = cols_smp,
       xlim = xlim, ylim = ylim,
       align_mode = align_mode)
-    
-  })
-
-
-MetabBatchSimple$methods(find_bulk_peaks_all_samples =
-  function(...){
-    
-    for(msample in .self$sample_metab_meas_list){
-      
-      msample$find_bulk_peaks_all_ephe(...)
-      
-    }
     
   })
 
@@ -331,6 +352,10 @@ MetabBatchSimple$methods(set_xcms_peakgrp_info =
 
 MetabBatchSimple$methods(align_xcms =
   function(ipkgrpp){
+    
+    if(is(.self$xcms_MSnbase, "uninitializedField")){
+      stop("xcms data not set.")
+    }
     
     .self$set_xcms_peakgrp_info()
     
