@@ -1,0 +1,19 @@
+function [ intsts_mat, closest_mzs_mat ] = ...
+    get_ephes_from_rsmmsd_simple(target_mzs, imspectra)
+
+    spectra_mzss    = imspectra.mzss;
+    spectra_intstss = imspectra.intstss;
+
+    [ intsts_set, closest_mzs_set ] = ...
+        arrayfun(@(tmp_i) get_ephe_from_rsmmsd_simple( ...
+            target_mzs(tmp_i), spectra_mzss, spectra_intstss), ...
+            1:length(target_mzs), 'UniformOutput', false);
+    
+    intsts_mat = cell2mat(transpose(intsts_set));
+    closest_mzs_mat = cell2mat(transpose(closest_mzs_set));
+
+    %     intsts = ...
+    %         arrayfun(@(tmpx) spectra_intsts{tmpx}(mzs_idxs(tmpx)), ...
+    %                  1:length(spectra_mzs));
+
+end
